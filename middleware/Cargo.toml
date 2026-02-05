@@ -1,7 +1,9 @@
 [package]
 name = "taskchampion-middleware"
 version = "0.1.0"
+authors = ["Daniel Hufschläger"]
 edition = "2024"
+license = "MIT"
 
 [dependencies]
 taskchampion = "3.0"

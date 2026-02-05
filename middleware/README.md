@@ -37,21 +37,35 @@ A lightweight Rust-based middleware service that provides a REST API for [Taskch
    ```bash
    cargo run
    ```
-   The server will start on `http://0.0.0.0:3001`.
+   The server will start on `http://0.0.0.0:3001` (default).
 
 ## API Documentation
 
 ### Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET`  | `/health` | Service health check |
-| `GET`  | `/tasks` | List all tasks (excluding deleted) |
-| `POST` | `/tasks` | Create a new task |
-| `GET`  | `/tasks/:uuid` | Get details of a specific task |
-| `PUT`  | `/tasks/:uuid` | Update an existing task |
-| `DELETE`| `/tasks/:uuid` | Delete a task |
-| `POST` | `/sync` | Manually trigger synchronization |
+| Method       | Endpoint                  | Description                           |
+|--------------|---------------------------|---------------------------------------|
+| **System**   |                           |                                       |
+| `GET`        | `/health`                 | Service health check                  |
+| `POST`       | `/sync`                   | Manually trigger synchronization      |
+| **Tasks**    |                           |                                       |
+| `GET`        | `/tasks`                  | List all tasks (excluding deleted)    |
+| `POST`       | `/tasks`                  | Create a new task                     |
+| `GET`        | `/tasks/:uuid`            | Get details of a specific task        |
+| `PUT`        | `/tasks/:uuid`            | Update an existing task               |
+| `DELETE`     | `/tasks/:uuid`            | Delete a task                         |
+| **Projects** |                           |                                       |
+| `GET`        | `/projects`               | List all unique projects              |
+| `GET`        | `/projects/:name`         | Get stats for a project               |
+| `GET`        | `/projects/:name/details` | Get detailed project info             |
+| `GET`        | `/projects/:name/tasks`   | List all tasks in a project           |
+| `POST`       | `/projects/:name/tasks`   | Create a new task in a project        |
+| **Tags**     |                           |                                       |
+| `GET`        | `/tags`                   | List all unique tags                  |
+| `GET`        | `/tags/:name`             | Get stats for a tag                   |
+| `GET`        | `/tags/:name/details`     | Get detailed tag info                 |
+| `GET`        | `/tags/:name/tasks`       | List all tasks with a tag             |
+| `POST`       | `/tags/:name/tasks`       | Create a new task with a specific tag |
 
 ### Example: Create a Task
 
@@ -66,6 +80,8 @@ curl -X POST http://localhost:3001/tasks \
   }'
 ```
 
+Supported priorities: `H` (High), `M` (Medium), `L` (Low), `None` (or empty string).
+
 ### Example: Get a Task
 
 ```bash
@@ -78,8 +94,37 @@ curl -X GET http://localhost:3001/tasks/<uuid>
 curl -X PUT http://localhost:3001/tasks/<uuid> \
   -H "Content-Type: application/json" \
   -d '{
-    "status": "completed"
+    "description": "Buy a LOT of milk",
+    "status": "completed",
+    "priority": "M",
+    "tags": ["urgent"]
   }'
+```
+
+All fields are optional in `PUT`. Updating `tags` replaces the entire tag list for the task.
+
+### Example: Delete a Task
+
+```bash
+curl -X DELETE http://localhost:3001/tasks/<uuid>
+```
+
+### Example: Projects & Tags
+
+```bash
+# List all projects
+curl -X GET http://localhost:3001/projects
+
+# Get tasks for a specific project
+curl -X GET http://localhost:3001/projects/Work/tasks
+
+# Create a task in a project
+curl -X POST http://localhost:3001/projects/Personal/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"description": "Buy groceries"}'
+
+# List all tags
+curl -X GET http://localhost:3001/tags
 ```
 
 ## Docker
@@ -106,19 +151,20 @@ The following environment variables can be used to configure the service:
 
 ### Required
 
-| Variable | Description |
-|----------|-------------|
-| `TC_CLIENT_ID` | Your Taskchampion Client ID (UUID) |
+| Variable                 | Description                        |
+|--------------------------|------------------------------------|
+| `TC_CLIENT_ID`           | Your Taskchampion Client ID (UUID) |
 | `TC_ENCRYPTION_PASSWORD` | Password for end-to-end encryption |
-| `TC_SYNC_SERVER_URL` | URL of the remote sync server |
+| `TC_SYNC_SERVER_URL`     | URL of the remote sync server      |
 
 ### Optional
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `TC_DB_PATH` | Path to the SQLite database file | `./local-cache.db` |
-| `TC_AUTO_SYNC` | Enable auto-sync after write operations | `true` |
-| `RUST_LOG` | Logging level (e.g., `info`, `debug`, `error`) | `info` |
+| Variable         | Description                                    | Default            |
+|------------------|------------------------------------------------|--------------------|
+| `TC_DB_PATH`     | Path to the SQLite database file               | `./local-cache.db` |
+| `TC_AUTO_SYNC`   | Enable auto-sync after write operations        | `true`             |
+| `TC_SERVER_PORT` | Port for the HTTP server                       | `3001`             |
+| `RUST_LOG`       | Logging level (e.g., `info`, `debug`, `error`) | `info`             |
 
 ## Architecture Notes
 
