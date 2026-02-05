@@ -1,3 +1,5 @@
+// main.rs
+
 mod models;
 mod handlers;
 
@@ -13,9 +15,13 @@ use taskchampion::{
     storage::AccessMode,
 };
 use tokio::sync::Mutex;
-use tracing::{info, warn};
+use tracing::{info, warn, error};
 
 use handlers::AppState;
+
+// ============================================
+// SERVER WRAPPER (Thread-Safe)
+// ============================================
 
 pub struct ServerWrapper(pub Box<dyn Server>);
 
@@ -35,14 +41,23 @@ impl std::ops::DerefMut for ServerWrapper {
     }
 }
 
+// ============================================
+// MAIN
+// ============================================
+
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tracing_subscriber::fmt::init();
+    // Initialize logging
+    tracing_subscriber::fmt()
+        .with_target(false)
+        .with_thread_ids(false)
+        .with_level(true)
+        .init();
 
     info!("🚀 Starting Taskchampion Encryption Middleware...");
 
     // ============================================
-    // REQUIRED CONFIG - Must be set!
+    // LOAD & VALIDATE CONFIG
     // ============================================
 
     let client_id = env::var("TC_CLIENT_ID")
@@ -57,57 +72,72 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sync_server_url = env::var("TC_SYNC_SERVER_URL")
         .expect("❌ TC_SYNC_SERVER_URL environment variable must be set!");
 
-    // ============================================
-    // OPTIONAL CONFIG
-    // ============================================
-
     let db_path = env::var("TC_DB_PATH")
         .unwrap_or_else(|_| "./local-cache.db".to_string());
 
     let auto_sync = env::var("TC_AUTO_SYNC")
-        .unwrap_or_else(|_| "true".to_string())
-        .parse()
+        .map(|v| v.to_lowercase() == "true")
         .unwrap_or(true);
 
+    let server_port = env::var("TC_SERVER_PORT")
+        .unwrap_or_else(|_| "3001".to_string())
+        .parse::<u16>()
+        .expect("❌ TC_SERVER_PORT must be a valid port number!");
+
     // ============================================
-    // SECURITY: Derive Encryption Key
+    // DERIVE ENCRYPTION KEY
     // ============================================
 
     info!("🔐 Deriving encryption key from password...");
     let encryption_secret = encryption_password.as_bytes().to_vec();
 
     // ============================================
-    // LOG CONFIG (without secrets!)
+    // LOG CONFIGURATION (Safe - No Secrets!)
     // ============================================
 
     info!("📊 Configuration:");
     info!("  • Sync Server: {}", sync_server_url);
-    info!("  • Client ID: {}", client_uuid);
-    info!("  • Database: {}", db_path);
-    info!("  • Encryption: ✅ ENABLED (Argon2 derived)");
-    info!("  • Auto-Sync: {}", auto_sync);
+    info!("  • Client ID:   {}", client_uuid);
+    info!("  • Database:    {}", db_path);
+    info!("  • Port:        {}", server_port);
+    info!("  • Encryption:  ✅ ENABLED");
+    info!("  • Auto-Sync:   {}", if auto_sync { "✅ ON" } else { "⏸️  OFF" });
 
     // ============================================
-    // INITIALIZE STORAGE & SERVER
+    // INITIALIZE STORAGE
     // ============================================
 
+    info!("💾 Initializing SQLite storage...");
     let storage = SqliteStorage::new(
-        db_path,
+        db_path.clone(),
         AccessMode::ReadWrite,
         true
-    ).await?;
+    ).await.map_err(|e| {
+        error!("❌ Failed to initialize storage at {}: {}", db_path, e);
+        e
+    })?;
 
     let mut replica = Replica::new(storage);
 
-    // Configure Remote Server with Encryption
+    // ============================================
+    // CONFIGURE ENCRYPTED SERVER CONNECTION
+    // ============================================
+
+    info!("🔌 Connecting to sync server...");
     let server_config = ServerConfig::Remote {
-        url: sync_server_url.parse()?,
+        url: sync_server_url.parse().map_err(|e| {
+            error!("❌ Invalid sync server URL: {}", e);
+            e
+        })?,
         client_id: client_uuid,
         encryption_secret,
     };
 
-    info!("🔌 Connecting to sync server...");
-    let server = server_config.into_server().await?;
+    let server = server_config.into_server().await.map_err(|e| {
+        error!("❌ Failed to connect to sync server: {}", e);
+        e
+    })?;
+
     let mut server_wrapper = ServerWrapper(server);
 
     // ============================================
@@ -120,15 +150,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Err(e) => {
             warn!("⚠️  Initial sync failed: {}", e);
             warn!("    This may happen if:");
-            warn!("    1. Sync server is unreachable");
-            warn!("    2. Client ID is not registered");
-            warn!("    3. Wrong encryption password");
-            warn!("    Continuing anyway...");
+            warn!("    • Sync server is unreachable");
+            warn!("    • Client ID is not registered");
+            warn!("    • Wrong encryption password");
+            warn!("    • Network issues");
+            warn!("    Continuing anyway - sync available via POST /sync");
         },
     }
 
     // ============================================
-    // BUILD API
+    // BUILD APPLICATION STATE
     // ============================================
 
     let state = AppState {
@@ -137,27 +168,60 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         auto_sync,
     };
 
+    // ============================================
+    // BUILD API ROUTER
+    // ============================================
+
     let app = Router::new()
+        // ============ SYSTEM ============
         .route("/health", get(handlers::health))
+        .route("/sync", post(handlers::trigger_sync))
+
+        // ============ TASKS ============
         .route("/tasks", get(handlers::list_tasks))
         .route("/tasks", post(handlers::create_task))
         .route("/tasks/:uuid", get(handlers::get_task))
         .route("/tasks/:uuid", put(handlers::update_task))
         .route("/tasks/:uuid", delete(handlers::delete_task))
-        .route("/sync", post(handlers::trigger_sync))
+
+        // ============ PROJECTS ============
+        .route("/projects", get(handlers::list_projects))
+        .route("/projects/:name", get(handlers::get_project_stats))
+        .route("/projects/:name/details", get(handlers::get_project_details))
+        .route("/projects/:name/tasks", get(handlers::get_project_tasks))
+        .route("/projects/:name/tasks", post(handlers::create_project_task))
+
+        // ============ TAGS ============
+        .route("/tags", get(handlers::list_tags))
+        .route("/tags/:name", get(handlers::get_tag_stats))
+        .route("/tags/:name/details", get(handlers::get_tag_details))
+        .route("/tags/:name/tasks", get(handlers::get_tag_tasks))
+        .route("/tags/:name/tasks", post(handlers::create_task_with_tag))
+
         .with_state(state);
 
     // ============================================
     // START SERVER
     // ============================================
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3001").await?;
+    let bind_addr = format!("0.0.0.0:{}", server_port);
+    let listener = tokio::net::TcpListener::bind(&bind_addr).await.map_err(|e| {
+        error!("❌ Failed to bind to {}: {}", bind_addr, e);
+        e
+    })?;
 
-    info!("🎉 Rust Encryption Middleware running on http://0.0.0.0:3001");
-    info!("🔐 All data encrypted before sync (Go backend never sees keys)");
-    info!("📡 Ready to accept requests from Go backend");
+    info!("✅ Server ready!");
+    info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    info!("🎉 Rust Encryption Middleware RUNNING");
+    info!("🌐 Listening on: http://{}", bind_addr);
+    info!("🔐 End-to-End Encryption: ✅ ACTIVE");
+    info!("📡 Ready for Go backend requests");
+    info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app).await.map_err(|e| {
+        error!("❌ Server error: {}", e);
+        e
+    })?;
 
     Ok(())
 }

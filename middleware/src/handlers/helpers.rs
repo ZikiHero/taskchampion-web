@@ -1,0 +1,118 @@
+use axum::http::StatusCode;
+use std::future::Future;
+use std::task::{Context, Poll};
+use taskchampion::{Uuid, Operations, Tag, Status, Task, Replica, SqliteStorage};
+use tracing::error;
+
+use super::AppState;
+
+// ============================================
+// UNSAFE SEND WRAPPER
+// ============================================
+
+pub struct UnsafeSendFuture<F>(pub F);
+unsafe impl<F> Send for UnsafeSendFuture<F> {}
+
+impl<F: Future> Future for UnsafeSendFuture<F> {
+    type Output = F::Output;
+    fn poll(self: std::pin::Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        unsafe { self.map_unchecked_mut(|s| &mut s.0).poll(cx) }
+    }
+}
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+pub async fn get_task_from_replica(
+    replica: &mut Replica<SqliteStorage>,
+    uuid: Uuid,
+) -> Result<Task, StatusCode> {
+    match replica.get_task(uuid).await {
+        Ok(Some(task)) if task.get_status() != Status::Deleted => Ok(task),
+        Ok(_) => Err(StatusCode::NOT_FOUND),
+        Err(e) => {
+            error!("Database error: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+pub async fn commit_and_sync(
+    mut replica: tokio::sync::MutexGuard<'_, Replica<SqliteStorage>>,
+    ops: Operations,
+    state: AppState,
+    sync_err_msg: &str,
+) -> Result<(), StatusCode> {
+    replica.commit_operations(ops).await.map_err(|e| {
+        error!("Failed to commit operations: {}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+    drop(replica);
+
+    if let Err(e) = auto_sync_if_enabled(state).await {
+        error!("{}: {}", sync_err_msg, e);
+    }
+    Ok(())
+}
+
+pub async fn perform_sync(state: &AppState) -> Result<(), String> {
+    let mut replica = state.replica.lock().await;
+    let mut server = state.server.lock().await;
+
+    let sync_fut = replica.sync(&mut **server, false);
+    match UnsafeSendFuture(sync_fut).await {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            error!("❌ Sync failed: {}", e);
+            Err(format!("Sync failed: {}", e))
+        }
+    }
+}
+
+pub fn map_status(status_str: &str) -> Result<Status, StatusCode> {
+    match status_str.to_lowercase().as_str() {
+        "pending" => Ok(Status::Pending),
+        "completed" => Ok(Status::Completed),
+        "deleted" => Ok(Status::Deleted),
+        _ => Err(StatusCode::BAD_REQUEST),
+    }
+}
+
+pub fn map_priority(priority_str: &str) -> Result<crate::handlers::Priority, StatusCode> {
+    crate::handlers::Priority::try_from(priority_str)
+        .map_err(|_| StatusCode::BAD_REQUEST)
+}
+
+pub fn apply_tags(
+    task: &mut Task,
+    tags: Vec<String>,
+    ops: &mut Operations
+) -> Result<(), StatusCode> {
+    // Clear existing tags first
+    let current_tags: Vec<Tag> = task.get_tags().collect();
+    for tag in current_tags {
+        task.remove_tag(&tag, ops)
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    }
+
+    // Add new tags
+    for tag_name in tags {
+        let tag = Tag::try_from(tag_name.as_str())
+            .map_err(|_| StatusCode::BAD_REQUEST)?;
+        task.add_tag(&tag, ops)
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    }
+    Ok(())
+}
+
+pub async fn auto_sync_if_enabled(state: AppState) -> Result<(), String> {
+    if !state.auto_sync {
+        return Ok(());
+    }
+
+    tracing::info!("🔄 Auto-sync triggered...");
+    perform_sync(&state).await?;
+    tracing::info!("✅ Auto-sync completed");
+    Ok(())
+}

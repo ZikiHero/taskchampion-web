@@ -44,11 +44,14 @@ impl TaskResponse {
         Self {
             uuid: task.get_uuid(),
             description: task.get_description().to_string(),
-            status: format!("{:?}", task.get_status()),
+            status: format!("{:?}", task.get_status()).to_lowercase(),
             entry: task.get_entry(),
             modified: task.get_modified(),
             tags: task.get_tags().map(|t| t.to_string()).collect(),
-            priority: Some(task.get_priority().to_string()),
+            priority: {
+                let p = task.get_priority().to_string();
+                if p.is_empty() { None } else { Some(p) }
+            },
             due: task.get_due(),
         }
     }

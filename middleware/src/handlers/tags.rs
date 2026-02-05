@@ -1,0 +1,386 @@
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    Json,
+    response::IntoResponse,
+};
+use serde::Serialize;
+use taskchampion::{Operations, Status, Tag};
+use tracing::error;
+
+use crate::models::{CreateTaskRequest, TaskResponse};
+use super::{AppState, helpers::*};
+
+// ============================================
+// DATA STRUCTURES
+// ============================================
+
+#[derive(Serialize, Debug)]
+pub struct TagStats {
+    pub name: String,
+    pub task_count: usize,
+    pub pending_count: usize,
+    pub completed_count: usize,
+    pub deleted_count: usize,
+}
+
+#[derive(Serialize)]
+pub struct TagDetails {
+    pub name: String,
+    pub task_count: usize,
+    pub pending_count: usize,
+    pub completed_count: usize,
+    pub deleted_count: usize,
+    pub tasks_preview: Vec<TaskResponse>,
+}
+
+// ============================================
+// TAG HANDLERS
+// ============================================
+
+/// GET /tags - List all unique tags
+pub async fn list_tags(
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    let mut replica = state.replica.lock().await;
+
+    let mut tags = std::collections::HashSet::new();
+
+    match replica.all_tasks().await {
+        Ok(all_tasks) => {
+            for task in all_tasks.values() {
+                // Only count tags from non-deleted tasks
+                if task.get_status() != Status::Deleted {
+                    for tag in task.get_tags() {
+                        tags.insert(tag.to_string());
+                    }
+                }
+            }
+
+            let mut tag_list: Vec<String> = tags.into_iter().collect();
+            tag_list.sort();
+
+            Json(tag_list).into_response()
+        }
+        Err(e) => {
+            error!("Failed to list tags: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+/// GET /tags/:name - Get tag statistics
+pub async fn get_tag_stats(
+    State(state): State<AppState>,
+    Path(tag_name): Path<String>,
+) -> impl IntoResponse {
+    let mut replica = state.replica.lock().await;
+
+    let mut task_count = 0;
+    let mut pending_count = 0;
+    let mut completed_count = 0;
+    let mut deleted_count = 0;
+
+    let tag_to_find = match Tag::try_from(tag_name.as_str()) {
+        Ok(t) => t,
+        Err(_) => return StatusCode::BAD_REQUEST.into_response(),
+    };
+
+    match replica.all_tasks().await {
+        Ok(all_tasks) => {
+            for task in all_tasks.values() {
+                if task.get_tags().any(|t| t == tag_to_find) {
+                    task_count += 1;
+
+                    match task.get_status() {
+                        Status::Pending => pending_count += 1,
+                        Status::Completed => completed_count += 1,
+                        Status::Deleted => deleted_count += 1,
+                        _ => {}
+                    }
+                }
+            }
+
+            // Return 404 if tag doesn't exist
+            if task_count == 0 {
+                return StatusCode::NOT_FOUND.into_response();
+            }
+
+            Json(TagStats {
+                name: tag_name,
+                task_count,
+                pending_count,
+                completed_count,
+                deleted_count,
+            }).into_response()
+        }
+        Err(e) => {
+            error!("Failed to get tag stats: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+/// GET /tags/:name/details - Get tag details with task preview
+pub async fn get_tag_details(
+    State(state): State<AppState>,
+    Path(tag_name): Path<String>,
+) -> impl IntoResponse {
+    let mut replica = state.replica.lock().await;
+
+    let mut task_count = 0;
+    let mut pending_count = 0;
+    let mut completed_count = 0;
+    let mut deleted_count = 0;
+    let mut tasks_preview = Vec::new();
+
+    let tag_to_find = match Tag::try_from(tag_name.as_str()) {
+        Ok(t) => t,
+        Err(_) => return StatusCode::BAD_REQUEST.into_response(),
+    };
+
+    match replica.all_tasks().await {
+        Ok(all_tasks) => {
+            let mut matching_tasks: Vec<_> = all_tasks
+                .values()
+                .filter(|task| task.get_tags().any(|t| t == tag_to_find))
+                .collect();
+
+            // Return 404 if tag doesn't exist
+            if matching_tasks.is_empty() {
+                return StatusCode::NOT_FOUND.into_response();
+            }
+
+            // Sort by entry time (newest first)
+            matching_tasks.sort_by(|a, b| {
+                b.get_entry().cmp(&a.get_entry())
+            });
+
+            for task in &matching_tasks {
+                task_count += 1;
+
+                match task.get_status() {
+                    Status::Pending => pending_count += 1,
+                    Status::Completed => completed_count += 1,
+                    Status::Deleted => deleted_count += 1,
+                    _ => {}
+                }
+
+                // Only include first 5 tasks in preview
+                if tasks_preview.len() < 5 && task.get_status() != Status::Deleted {
+                    tasks_preview.push(TaskResponse::from_task(task));
+                }
+            }
+
+            Json(TagDetails {
+                name: tag_name,
+                task_count,
+                pending_count,
+                completed_count,
+                deleted_count,
+                tasks_preview,
+            }).into_response()
+        }
+        Err(e) => {
+            error!("Failed to get tag details: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+/// GET /tags/:name/tasks - Get all tasks with this tag
+pub async fn get_tag_tasks(
+    State(state): State<AppState>,
+    Path(tag_name): Path<String>,
+) -> impl IntoResponse {
+    let mut replica = state.replica.lock().await;
+
+    let tag_to_find = match Tag::try_from(tag_name.as_str()) {
+        Ok(t) => t,
+        Err(_) => return StatusCode::BAD_REQUEST.into_response(),
+    };
+
+    match replica.all_tasks().await {
+        Ok(all_tasks) => {
+            let mut matching_tasks: Vec<_> = all_tasks
+                .values()
+                .filter(|task| {
+                    task.get_status() != Status::Deleted &&
+                        task.get_tags().any(|t| t == tag_to_find)
+                })
+                .collect();
+
+            // Return 404 if tag doesn't exist
+            if matching_tasks.is_empty() {
+                return StatusCode::NOT_FOUND.into_response();
+            }
+
+            // Sort by entry time (newest first)
+            matching_tasks.sort_by(|a, b| {
+                b.get_entry().cmp(&a.get_entry())
+            });
+
+            let tasks: Vec<TaskResponse> = matching_tasks
+                .iter()
+                .map(|task| TaskResponse::from_task(task))
+                .collect();
+
+            Json(tasks).into_response()
+        }
+        Err(e) => {
+            error!("Failed to get tag tasks: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+/// POST /tags/:name/tasks - Create a new task with this tag
+pub async fn create_task_with_tag(
+    State(state): State<AppState>,
+    Path(tag_name): Path<String>,
+    Json(mut payload): Json<CreateTaskRequest>,
+) -> impl IntoResponse {
+    // Validate tag name
+    if let Err(_) = Tag::try_from(tag_name.as_str()) {
+        return StatusCode::BAD_REQUEST.into_response();
+    }
+
+    // Add tag to payload
+    let mut tags = payload.tags.unwrap_or_default();
+    if !tags.contains(&tag_name) {
+        tags.push(tag_name);
+    }
+    payload.tags = Some(tags);
+
+    // Reuse the existing create_task handler logic
+    let mut replica = state.replica.lock().await;
+    let mut ops = Operations::new();
+
+    let mut task = match replica
+        .create_task(taskchampion::Uuid::new_v4(), &mut ops)
+        .await {
+        Ok(t) => t,
+        Err(e) => {
+            error!("Failed to create task: {}", e);
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        }
+    };
+
+    let result: Result<(), StatusCode> = (|| {
+        // Set basic properties
+        task.set_status(Status::Pending, &mut ops)
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        task.set_description(payload.description, &mut ops)
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+        // Apply tags
+        if let Some(tags) = payload.tags {
+            apply_tags(&mut task, tags, &mut ops)?;
+        }
+
+        // Apply optional fields
+        if let Some(priority_str) = payload.priority {
+            let priority = map_priority(&priority_str)?;
+            task.set_priority(priority.into(), &mut ops)
+                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        }
+
+        if let Some(due) = payload.due {
+            task.set_due(Some(due), &mut ops)
+                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        }
+
+        Ok(())
+    })();
+
+    if let Err(status) = result {
+        return status.into_response();
+    }
+
+    let response = TaskResponse::from_task(&task);
+
+    if let Err(status) = commit_and_sync(
+        replica,
+        ops,
+        state.clone(),
+        "Auto-sync failed after create with tag"
+    ).await {
+        return status.into_response();
+    }
+
+    Json(response).into_response()
+}
+
+// ============================================
+// TESTS
+// ============================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::http::StatusCode;
+    use std::sync::Arc;
+    use taskchampion::{Replica, SqliteStorage};
+    use tokio::sync::Mutex;
+
+    async fn create_test_state() -> AppState {
+        let replica = Replica::new(
+            SqliteStorage::new_in_memory().unwrap()
+        );
+
+        let server = crate::ServerWrapper::new_in_memory();
+
+        AppState {
+            replica: Arc::new(Mutex::new(replica)),
+            server: Arc::new(Mutex::new(server)),
+            auto_sync: false,
+        }
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn test_list_tags_empty() {
+        let state = create_test_state().await;
+        let result = list_tags(State(state)).await;
+
+        assert!(result.is_ok());
+        let tags = result.unwrap().0;
+        assert_eq!(tags.len(), 0);
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn test_tag_stats_not_found() {
+        let state = create_test_state().await;
+        let result = get_tag_stats(
+            State(state),
+            Path("nonexistent".to_string())
+        ).await;
+
+        assert_eq!(result.unwrap_err(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn test_create_task_with_tag() {
+        let state = create_test_state().await;
+
+        let payload = CreateTaskRequest {
+            description: "Test task".to_string(),
+            tags: None,
+            priority: None,
+            due: None,
+            project: None,
+        };
+
+        let result = create_task_with_tag(
+            State(state.clone()),
+            Path("urgent".to_string()),
+            Json(payload)
+        ).await;
+
+        assert!(result.is_ok());
+        let task = result.unwrap().0;
+        assert!(task.tags.contains(&"urgent".to_string()));
+    }
+}
