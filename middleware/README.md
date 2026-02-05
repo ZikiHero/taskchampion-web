@@ -1,4 +1,4 @@
-# Taskchampion Middleware Service
+# Taskchampion Middleware service
 
 A lightweight Rust-based middleware service that provides a REST API for [Taskchampion](https://github.com/GothenburgBitFactory/taskchampion). This service allows you to manage tasks through standard HTTP endpoints and automatically synchronizes with a Taskchampion server.
 
@@ -64,7 +64,7 @@ curl -X POST http://localhost:3001/tasks \
 The Dockerfile uses `cargo-chef` for optimized dependency caching.
 
 ```bash
-docker build -t taskchampion-service .
+docker build -t taskchampion-middleware .
 ```
 
 ### Run the Container
@@ -73,7 +73,7 @@ docker build -t taskchampion-service .
 docker run -p 3001:3001 \
   -e TC_SERVER_DIR=/app/data \
   -v $(pwd)/data:/app/data \
-  taskchampion-service
+  taskchampion-middleware
 ```
 
 ## Configuration
