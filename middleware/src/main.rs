@@ -35,45 +35,6 @@ impl std::ops::DerefMut for ServerWrapper {
     }
 }
 
-/// Derives encryption key from password using Argon2
-/*
-fn derive_encryption_key(password: &str) -> Vec<u8> {
-    use argon2::{
-        password_hash::{PasswordHasher, SaltString},
-        Argon2,
-    };
-
-    // Fixed salt for deterministic key derivation
-    // This ensures same password always produces same key
-    let salt = SaltString::from_b64("dGFza2NoYW1waW9uU2FsdFYx").unwrap();
-    let argon2 = Argon2::default();
-
-    let hash = argon2
-        .hash_password(password.as_bytes(), &salt)
-        .unwrap()
-        .hash
-        .unwrap();
-
-    // Return first 32 bytes as encryption key
-    hash.as_bytes()[..32].to_vec()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_derive_encryption_key() {
-        let key1 = c("password123");
-        let key2 = derive_encryption_key("password123");
-        let key3 = derive_encryption_key("different");
-
-        assert_eq!(key1.len(), 32);
-        assert_eq!(key1, key2);
-        assert_ne!(key1, key3);
-    }
-}
-*/
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
