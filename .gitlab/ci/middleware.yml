@@ -1,17 +1,3 @@
-stages:
-  - test
-  - build
-  - report
-
-variables:
-  CARGO_HOME: $CI_PROJECT_DIR/.cargo
-
-cache:
-  key: ${CI_COMMIT_REF_SLUG}
-  paths:
-    - .cargo/
-    - target/
-
 test:
   image: rust:${RUST_VERSION}
   tags: [docker]
@@ -34,6 +20,7 @@ test:
 build:
   stage: build
   tags: [docker]
+  image: rust:${RUST_VERSION}
   before_script:
     - cd middleware
   script:

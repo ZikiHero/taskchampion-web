@@ -1,3 +1,14 @@
+
+stages:
+  - test
+  - build
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - .cargo/
+    - target/
+
 stages:
   - test
   - build
