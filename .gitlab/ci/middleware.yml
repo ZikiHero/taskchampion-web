@@ -1,0 +1,44 @@
+stages:
+  - test
+  - build
+  - report
+
+variables:
+  CARGO_HOME: $CI_PROJECT_DIR/.cargo
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - .cargo/
+    - target/
+
+test:
+  image: rust:${RUST_VERSION}
+  tags: [docker]
+  stage: test
+  before_script:
+    - cd middleware
+    - apt-get update
+    - apt-get install -y libssl-dev pkg-config
+    - cargo install cargo-tarpaulin || true
+  script:
+    - cargo test --verbose
+    - cargo tarpaulin --out Xml --output-dir coverage
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/cobertura.xml
+  coverage: '/^\d+\.\d+% coverage/'
+
+build:
+  stage: build
+  tags: [docker]
+  before_script:
+    - cd middleware
+  script:
+    - cargo build --release
+  artifacts:
+    paths:
+      - target/release/
+

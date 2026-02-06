@@ -1,0 +1,11 @@
+stages:
+  - test
+  - build
+ 
+
+variables:
+  CARGO_HOME: $CI_PROJECT_DIR/.cargo
+  RUST_VERSION: "1.93"
+
+include:
+  - local: .gitlab/ci/middleware.yml
