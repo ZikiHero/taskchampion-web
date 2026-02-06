@@ -183,6 +183,15 @@ pub fn fill_task_from_create_request(
         })?;
     }
 
+    // Apply project if provided
+    if let Some(project) = payload.project {
+        let value = if project.is_empty() { None } else { Some(project) };
+        task.set_value("project".to_string(), value, ops).map_err(|e| {
+            error!("Failed to set project: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+    }
+
     Ok(())
 }
 

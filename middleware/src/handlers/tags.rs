@@ -173,6 +173,9 @@ pub async fn get_tag_details(
                 }
             }
 
+            // Sort preview by entry time (newest first)
+            tasks_preview.sort_by(|a, b| b.entry.cmp(&a.entry));
+
             Json(TagDetails {
                 name: tag_name,
                 task_count,
@@ -317,6 +320,7 @@ mod tests {
             tags: None,
             priority: None,
             due: None,
+            project: None,
         };
 
         let response = create_task_with_tag(

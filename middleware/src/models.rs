@@ -11,6 +11,8 @@ pub struct CreateTaskRequest {
     pub priority: Option<String>,
     #[serde(default)]
     pub due: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub project: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -25,6 +27,8 @@ pub struct UpdateTaskRequest {
     pub tags: Option<Vec<String>>,
     #[serde(default)]
     pub due: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub project: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -37,6 +41,7 @@ pub struct TaskResponse {
     pub tags: Vec<String>,
     pub priority: Option<String>,
     pub due: Option<DateTime<Utc>>,
+    pub project: Option<String>,
 }
 
 impl TaskResponse {
@@ -53,6 +58,7 @@ impl TaskResponse {
                 if p.is_empty() { None } else { Some(p) }
             },
             due: task.get_due(),
+            project: task.get_value("project").map(|v| v.to_string()),
         }
     }
 }
