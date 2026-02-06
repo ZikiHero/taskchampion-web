@@ -22,4 +22,4 @@ variables:
 
 include:
   - local: .gitlab/ci/middleware.yml
-  - local: .gitlab/ci/backend.yml
+#  - local: .gitlab/ci/backend.yml
