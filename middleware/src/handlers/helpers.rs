@@ -201,7 +201,7 @@ pub async fn create_test_state() -> AppState {
     use tokio::sync::Mutex;
     use taskchampion::{Replica, SqliteStorage, storage::AccessMode};
 
-    let storage = SqliteStorage::new(":memory:".to_string(), AccessMode::ReadWrite, true).await.unwrap();
+    let storage = SqliteStorage::new("testdata".to_string(), AccessMode::ReadWrite, true).await.unwrap();
     let replica = Replica::new(storage);
     let server = crate::ServerWrapper::new_in_memory();
 
