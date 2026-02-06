@@ -31,3 +31,6 @@ bin/
 # Editor/IDE
 .idea/
 # .vscode/
+
+# ignore rust build files
+middleware/target/**
