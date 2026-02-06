@@ -46,7 +46,7 @@ pub async fn list_tags(
 
     let mut tags = std::collections::HashSet::new();
 
-    match replica.all_tasks().await {
+    match get_all_tasks(&mut replica).await {
         Ok(all_tasks) => {
             for task in all_tasks.values() {
                 // Only count tags from non-deleted tasks
@@ -86,7 +86,7 @@ pub async fn get_tag_stats(
         Err(_) => return StatusCode::BAD_REQUEST.into_response(),
     };
 
-    match replica.all_tasks().await {
+    match get_all_tasks(&mut replica).await {
         Ok(all_tasks) => {
             for task in all_tasks.values() {
                 if task.get_tags().any(|t| t == tag_to_find) {
@@ -139,7 +139,7 @@ pub async fn get_tag_details(
         Err(_) => return StatusCode::BAD_REQUEST.into_response(),
     };
 
-    match replica.all_tasks().await {
+    match get_all_tasks(&mut replica).await {
         Ok(all_tasks) => {
             let mut matching_tasks: Vec<_> = all_tasks
                 .values()
@@ -200,7 +200,7 @@ pub async fn get_tag_tasks(
         Err(_) => return StatusCode::BAD_REQUEST.into_response(),
     };
 
-    match replica.all_tasks().await {
+    match get_all_tasks(&mut replica).await {
         Ok(all_tasks) => {
             let mut matching_tasks: Vec<_> = all_tasks
                 .values()
@@ -256,56 +256,12 @@ pub async fn create_task_with_tag(
     let mut replica = state.replica.lock().await;
     let mut ops = Operations::new();
 
-    let mut task = match replica
-        .create_task(taskchampion::Uuid::new_v4(), &mut ops)
-        .await {
+    let mut task = match create_new_task(&mut replica, &mut ops).await {
         Ok(t) => t,
-        Err(e) => {
-            error!("Failed to create task: {}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-        }
+        Err(status) => return status.into_response(),
     };
 
-    let result: Result<(), StatusCode> = (|| {
-        // Set basic properties
-        task.set_status(Status::Pending, &mut ops)
-            .map_err(|e| {
-                error!("Failed to set status: {}", e);
-                StatusCode::INTERNAL_SERVER_ERROR
-            })?;
-        task.set_description(payload.description, &mut ops)
-            .map_err(|e| {
-                error!("Failed to set description: {}", e);
-                StatusCode::INTERNAL_SERVER_ERROR
-            })?;
-
-        // Apply tags
-        if let Some(tags) = payload.tags {
-            apply_tags(&mut task, tags, &mut ops)?;
-        }
-
-        // Apply optional fields
-        if let Some(priority_str) = payload.priority {
-            let priority = map_priority(&priority_str)?;
-            task.set_priority(priority.into(), &mut ops)
-                .map_err(|e| {
-                    error!("Failed to set priority: {}", e);
-                    StatusCode::INTERNAL_SERVER_ERROR
-                })?;
-        }
-
-        if let Some(due) = payload.due {
-            task.set_due(Some(due), &mut ops)
-                .map_err(|e| {
-                    error!("Failed to set due: {}", e);
-                    StatusCode::INTERNAL_SERVER_ERROR
-                })?;
-        }
-
-        Ok(())
-    })();
-
-    if let Err(status) = result {
+    if let Err(status) = fill_task_from_create_request(&mut task, payload, &mut ops) {
         return status.into_response();
     }
 
@@ -331,22 +287,6 @@ pub async fn create_task_with_tag(
 mod tests {
     use super::*;
     use axum::http::StatusCode;
-    use std::sync::Arc;
-    use taskchampion::{Replica, SqliteStorage, storage::AccessMode};
-
-    use tokio::sync::Mutex;
-
-    async fn create_test_state() -> AppState {
-        let storage = SqliteStorage::new(":memory:".to_string(), AccessMode::ReadWrite, true).await.unwrap();
-        let replica = Replica::new(storage);
-        let server = crate::ServerWrapper::new_in_memory();
-
-        AppState {
-            replica: Arc::new(Mutex::new(replica)),
-            server: Arc::new(Mutex::new(server)),
-            auto_sync: false,
-        }
-    }
 
     #[tokio::test]
     async fn test_list_tags_empty() {
