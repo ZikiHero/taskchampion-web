@@ -84,9 +84,9 @@ pub async fn get_project_stats(
                 task_count += 1;
 
                 match task.get_status() {
-                    taskchampion::Status::Pending => pending_count += 1,
-                    taskchampion::Status::Completed => completed_count += 1,
-                    taskchampion::Status::Deleted => deleted_count += 1,
+                    Status::Pending => pending_count += 1,
+                    Status::Completed => completed_count += 1,
+                    Status::Deleted => deleted_count += 1,
                     _ => {}
                 }
             }
@@ -164,15 +164,15 @@ pub async fn get_project_details(
                 task_count += 1;
 
                 match task.get_status() {
-                    taskchampion::Status::Pending => {
+                    Status::Pending => {
                         pending_count += 1;
                         // Only include pending tasks in preview
                         if tasks_preview.len() < 10 {
                             tasks_preview.push(TaskResponse::from_task(task));
                         }
                     }
-                    taskchampion::Status::Completed => completed_count += 1,
-                    taskchampion::Status::Deleted => deleted_count += 1,
+                    Status::Completed => completed_count += 1,
+                    Status::Deleted => deleted_count += 1,
                     _ => {}
                 }
             }
@@ -326,14 +326,14 @@ mod tests {
                 .await
                 .unwrap();
             task1.set_value("project".to_string(), Some("work".to_string()), &mut ops).unwrap();
-            task1.set_status(taskchampion::Status::Pending, &mut ops).unwrap();
+            task1.set_status(Status::Pending, &mut ops).unwrap();
 
             let mut task2 = replica
                 .create_task(taskchampion::Uuid::new_v4(), &mut ops)
                 .await
                 .unwrap();
             task2.set_value("project".to_string(), Some("work".to_string()), &mut ops).unwrap();
-            task2.set_status(taskchampion::Status::Completed, &mut ops).unwrap();
+            task2.set_status(Status::Completed, &mut ops).unwrap();
             
             replica.commit_operations(ops).await.unwrap();
         }
