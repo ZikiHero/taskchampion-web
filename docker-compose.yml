@@ -1,0 +1,62 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: tc-postgres
+    env_file:
+      - .env 
+    volumes:
+      - pgdata:/var/lib/postgresql/data:z
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskchampion || exit 1"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    ports:
+      - "5434:5432"
+    networks:
+      - tc_network
+
+  sync-server:
+    container_name: sync-server
+    image: localhost/taskchampion-sync-server-postgres:latest
+    env_file:
+      - .env
+    environment:
+        RUST_LOG: info
+    volumes:
+      - syncdata:/var/lib/taskchampion-sync-server/data:z
+    ports:
+      - "8081:8080"
+    networks:
+        - tc_network
+    depends_on:
+      postgres:
+        condition: service_healthy 
+
+  sync-middleware:
+    container_name: tc_middleware
+    image: localhost/taskchampion-web-middleware:latest 
+    env_file:
+      - .env 
+    environment:
+        RUST_LOG: debug
+    volumes:
+      - middlewaredata:/app/data:z
+    ports:
+      - "3001:3001"
+    depends_on:
+      sync-server
+    networks:
+      - tc_network
+
+volumes:
+  pgdata:
+  syncdata:
+  middlewaredata:
+
+networks:
+  tc_network:
+    driver: bridge
