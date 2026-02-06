@@ -140,6 +140,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     })?;
 
     let mut replica = Replica::new(storage);
+    
+    // Check local tasks count
+    match replica.all_tasks().await {
+        Ok(tasks) => info!("Found {} tasks in local storage after initialization", tasks.len()),
+        Err(e) => warn!("Could not count local tasks: {}", e),
+    }
 
     // ============================================
     // CONFIGURE ENCRYPTED SERVER CONNECTION
@@ -168,15 +174,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("🔄 Performing initial encrypted sync...");
     match replica.sync(&mut *server_wrapper, false).await {
-        Ok(_) => info!("✅ Initial sync completed successfully"),
+        Ok(_) => {
+            info!("✅ Initial sync completed successfully");
+            match replica.all_tasks().await {
+                Ok(tasks) => info!("Found {} tasks in local storage after sync", tasks.len()),
+                Err(e) => warn!("Could not count local tasks after sync: {}", e),
+            }
+        },
         Err(e) => {
-            warn!("⚠️  Initial sync failed: {}", e);
-            warn!("    This may happen if:");
-            warn!("    • Sync server is unreachable");
-            warn!("    • Client ID is not registered");
-            warn!("    • Wrong encryption password");
-            warn!("    • Network issues");
-            warn!("    Continuing anyway - sync available via POST /sync");
+            let err_str = e.to_string();
+            if err_str.contains("404") || err_str.contains("not found") {
+                info!("ℹ️  Initial sync: Server returned 404 (Not Found).");
+                info!("   This is EXPECTED for a new Client ID that hasn't pushed any data yet.");
+                info!("   Data will be pushed to the server on the first task creation.");
+            } else {
+                warn!("⚠️  Initial sync failed: {}", e);
+                warn!("    This may happen if:");
+                warn!("    • Sync server is unreachable");
+                warn!("    • Client ID is not registered/new");
+                warn!("    • Wrong encryption password");
+                warn!("    • Network issues");
+                warn!("    Continuing anyway - sync available via POST /sync");
+            }
         },
     }
 
@@ -202,23 +221,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // ============ TASKS ============
         .route("/tasks", get(handlers::list_tasks))
         .route("/tasks", post(handlers::create_task))
-        .route("/tasks/:uuid", get(handlers::get_task))
-        .route("/tasks/:uuid", put(handlers::update_task))
-        .route("/tasks/:uuid", delete(handlers::delete_task))
+        .route("/tasks/{uuid}", get(handlers::get_task))
+        .route("/tasks/{uuid}", put(handlers::update_task))
+        .route("/tasks/{uuid}", delete(handlers::delete_task))
 
         // ============ PROJECTS ============
         .route("/projects", get(handlers::list_projects))
-        .route("/projects/:name", get(handlers::get_project_stats))
-        .route("/projects/:name/details", get(handlers::get_project_details))
-        .route("/projects/:name/tasks", get(handlers::get_project_tasks))
-        .route("/projects/:name/tasks", post(handlers::create_project_task))
+        .route("/projects/{name}", get(handlers::get_project_stats))
+        .route("/projects/{name}/details", get(handlers::get_project_details))
+        .route("/projects/{name}/tasks", get(handlers::get_project_tasks))
+        .route("/projects/{name}/tasks", post(handlers::create_project_task))
 
         // ============ TAGS ============
         .route("/tags", get(handlers::list_tags))
-        .route("/tags/:name", get(handlers::get_tag_stats))
-        .route("/tags/:name/details", get(handlers::get_tag_details))
-        .route("/tags/:name/tasks", get(handlers::get_tag_tasks))
-        .route("/tags/:name/tasks", post(handlers::create_task_with_tag))
+        .route("/tags/{name}", get(handlers::get_tag_stats))
+        .route("/tags/{name}/details", get(handlers::get_tag_details))
+        .route("/tags/{name}/tasks", get(handlers::get_tag_tasks))
+        .route("/tags/{name}/tasks", post(handlers::create_task_with_tag))
 
         .with_state(state);
 

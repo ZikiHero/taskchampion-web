@@ -48,6 +48,7 @@ pub async fn list_tags(
 
     match get_all_tasks(&mut replica).await {
         Ok(all_tasks) => {
+            tracing::info!("list_tags: Found {} total tasks", all_tasks.len());
             for task in all_tasks.values() {
                 // Only count tags from non-deleted tasks
                 if task.get_status() != Status::Deleted {

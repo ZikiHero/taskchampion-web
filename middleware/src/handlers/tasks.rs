@@ -19,11 +19,20 @@ pub async fn list_tasks(State(state): State<AppState>) -> impl IntoResponse {
 
     match get_all_tasks(&mut replica).await {
         Ok(all_tasks) => {
+            tracing::info!("Found {} total tasks in replica", all_tasks.len());
             let tasks: Vec<TaskResponse> = all_tasks
                 .values()
-                .filter(|task| task.get_status() != Status::Deleted)
+                .filter(|task| {
+                    let is_not_deleted = task.get_status() != Status::Deleted;
+                    if !is_not_deleted {
+                        tracing::debug!("Filtering out deleted task: {}", task.get_uuid());
+                    }
+                    is_not_deleted
+                })
                 .map(TaskResponse::from_task)
                 .collect();
+            
+            tracing::info!("Returning {} non-deleted tasks", tasks.len());
 
             Json(tasks).into_response()
         }

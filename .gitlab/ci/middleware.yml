@@ -14,7 +14,7 @@ test:
     reports:
       coverage_report:
         coverage_format: cobertura
-        path: coverage/cobertura.xml
+        path: middleware/coverage/cobertura.xml
   coverage: '/^\d+\.\d+% coverage/'
 
 build:
@@ -27,5 +27,5 @@ build:
     - cargo build --release
   artifacts:
     paths:
-      - target/release/
+      - /middleware/target/release/
 
