@@ -89,19 +89,32 @@ pub fn apply_tags(
     tags: Vec<String>,
     ops: &mut Operations
 ) -> Result<(), StatusCode> {
-    // Clear existing tags first
+    // Clear existing user-defined tags first
     let current_tags: Vec<Tag> = task.get_tags().collect();
     for tag in current_tags {
-        task.remove_tag(&tag, ops)
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        if tag.is_user() {
+            task.remove_tag(&tag, ops)
+                .map_err(|e| {
+                    error!("apply_tags remove_tag failed: {}", e);
+                    StatusCode::INTERNAL_SERVER_ERROR
+                })?;
+        }
     }
 
     // Add new tags
     for tag_name in tags {
         let tag = Tag::try_from(tag_name.as_str())
             .map_err(|_| StatusCode::BAD_REQUEST)?;
+        
+        if !tag.is_user() {
+             return Err(StatusCode::BAD_REQUEST);
+        }
+
         task.add_tag(&tag, ops)
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+            .map_err(|e| {
+                error!("apply_tags add_tag failed for {}: {}", tag_name, e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
     }
     Ok(())
 }

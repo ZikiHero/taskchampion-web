@@ -41,6 +41,28 @@ impl std::ops::DerefMut for ServerWrapper {
     }
 }
 
+impl ServerWrapper {
+    pub fn new_in_memory() -> Self {
+        struct DummyServer;
+        #[async_trait::async_trait(?Send)]
+        impl Server for DummyServer {
+            async fn get_child_version(&mut self, _parent_version_id: taskchampion::server::VersionId) -> Result<taskchampion::server::GetVersionResult, taskchampion::Error> {
+                todo!()
+            }
+            async fn add_version(&mut self, _parent_version_id: taskchampion::server::VersionId, _history_segment: Vec<u8>) -> Result<(taskchampion::server::AddVersionResult, taskchampion::server::SnapshotUrgency), taskchampion::Error> {
+                todo!()
+            }
+            async fn add_snapshot(&mut self, _version_id: taskchampion::server::VersionId, _data: Vec<u8>) -> Result<(), taskchampion::Error> {
+                todo!()
+            }
+            async fn get_snapshot(&mut self) -> Result<Option<(taskchampion::server::VersionId, Vec<u8>)>, taskchampion::Error> {
+                todo!()
+            }
+        }
+        Self(Box::new(DummyServer))
+    }
+}
+
 // ============================================
 // MAIN
 // ============================================
