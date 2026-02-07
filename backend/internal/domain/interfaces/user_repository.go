@@ -3,7 +3,7 @@ package interfaces
 import (
 	"context"
 
-	"hufschlager.net/tcweb-backend/internal/domain/user/models"
+	"hufschlaeger.net/tcweb-backend/internal/domain/models"
 )
 
 type UserRepository interface {

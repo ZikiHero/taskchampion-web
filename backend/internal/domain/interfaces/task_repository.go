@@ -3,7 +3,7 @@ package interfaces
 import (
 	"context"
 
-	"hufschlager.net/tcweb-backend/internal/domain/models"
+	"hufschlaeger.net/tcweb-backend/internal/domain/models"
 )
 
 type TaskRepository interface {
