@@ -7,7 +7,7 @@ import (
 )
 
 type TaskRepository struct {
-	client *TaskwarriorClient
+	client *Client
 }
 
 func (t TaskRepository) Create(ctx context.Context, task *value_objects.Task) error {
