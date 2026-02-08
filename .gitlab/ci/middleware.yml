@@ -1,4 +1,4 @@
-test:
+middlewar-test:
   image: rust:${RUST_VERSION}
   tags: [docker]
   stage: test
@@ -17,7 +17,7 @@ test:
         path: middleware/coverage/cobertura.xml
   coverage: '/^\d+\.\d+% coverage/'
 
-build:
+middleware-build:
   stage: build
   tags: [docker]
   image: rust:${RUST_VERSION}
