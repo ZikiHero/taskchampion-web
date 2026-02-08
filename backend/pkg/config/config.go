@@ -35,7 +35,7 @@ func LoadConfig(path string) (*Config, error) {
 			Host string `yaml:"host"`
 		}{
 			Port: "8080",
-			Host: "localhost",
+			Host: "0.0.0.0",
 		},
 		Database: struct {
 			Driver  string `yaml:"driver"`
@@ -44,7 +44,7 @@ func LoadConfig(path string) (*Config, error) {
 			MaxIdle int    `yaml:"max_idle"`
 		}{
 			Driver:  "sqlite",
-			DSN:     "tasks.db",
+			DSN:     "data/tasks.db",
 			MaxOpen: 10,
 			MaxIdle: 5,
 		},
@@ -91,9 +91,8 @@ func getConfigPath(path string) string {
 
 	// Suche nach Konfigurationsdatei in verschiedenen Pfaden
 	possiblePaths := []string{
-		"./config.yaml",
 		"./config/config.yaml",
-		"/etc/IngestListApiWrapper/config.yaml",
+		"/etc/tcweb-backend/config.yaml",
 	}
 
 	for _, p := range possiblePaths {
@@ -108,7 +107,7 @@ func getConfigPath(path string) string {
 
 func saveConfig(path string, config *Config) error {
 	// Erstelle Verzeichnis falls nicht vorhanden
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
 
@@ -117,5 +116,5 @@ func saveConfig(path string, config *Config) error {
 		return err
 	}
 
-	return os.WriteFile(path, data, 0644)
+	return os.WriteFile(path, data, 0o644)
 }
