@@ -43,7 +43,7 @@ func main() {
 		2*time.Hour,
 	)
 
-	// TaskService erstellen
+	// TaskwarriorService erstellen
 	client := taskwarrior.NewClient("http://tc_middleware:3001", "")
 	taskRepo := taskwarrior.NewTaskRepository(client)
 	taskService := services.NewTaskService(taskRepo)

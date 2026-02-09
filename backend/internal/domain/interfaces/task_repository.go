@@ -18,4 +18,6 @@ type TaskRepository interface {
 	Count(ctx context.Context) (int, error)
 	CountByStatus(ctx context.Context, status value_objects.TaskStatus) (int, error)
 	CountByAllStatuses(ctx context.Context) (map[value_objects.TaskStatus]int, error)
+
+	Sync(ctx context.Context) error
 }

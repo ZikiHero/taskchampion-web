@@ -71,8 +71,15 @@ func (t *TaskRepository) FindAll(ctx context.Context) ([]*value_objects.Task, er
 }
 
 func (t *TaskRepository) Update(ctx context.Context, task *value_objects.Task) error {
-	//TODO implement me
-	panic("implement me")
+	requestDto := t.taskMapper.DomainToDTO(task)
+	responseDto := TaskDTO{}
+
+	err := t.client.Post(ctx, "/tasks", &requestDto, &responseDto)
+	if err != nil {
+		return fmt.Errorf("failed to create task: %w", err)
+	}
+
+	return nil
 }
 
 func (t *TaskRepository) Delete(ctx context.Context, uuid string) error {
@@ -98,4 +105,13 @@ func (t *TaskRepository) CountByStatus(ctx context.Context, status value_objects
 func (t *TaskRepository) CountByAllStatuses(ctx context.Context) (map[value_objects.TaskStatus]int, error) {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (t *TaskRepository) Sync(ctx context.Context) error {
+	err := t.client.Post(ctx, "/sync", nil, nil)
+	if err != nil {
+
+		return fmt.Errorf("failed to sync tasks: %w", err)
+	}
+	return nil
 }
