@@ -3,7 +3,7 @@ version: "3.9"
 services:
   postgres:
     image: postgres:17-alpine
-    container_name: tc-postgres
+    container_name: tc_postgres
     env_file:
       - .env 
     volumes:
@@ -66,6 +66,17 @@ services:
       - "8090:8080"
     depends_on:
       sync-middleware
+    networks:
+      - tc_network
+
+  tcweb-frontend:
+    container_name: tc_frontend
+    build:
+      context: frontend 
+    env_file:
+      - .env 
+    ports:
+      - "4200:80"
     networks:
       - tc_network
 
