@@ -2,6 +2,9 @@
 
 A modern web-based task management system for [Taskwarrior](https://taskwarrior.org/) and [Taskchampion](https://github.com/GothenburgBitFactory/taskchampion). This project provides a full-stack environment to manage your tasks with a clean web interface, a robust Go backend, and a specialized Rust middleware for Taskchampion synchronization.
 
+![Screenshot](./docs/images/screenshot_001.png)
+
+
 ## Architecture
 
 The project is composed of several specialized services:
@@ -10,7 +13,7 @@ The project is composed of several specialized services:
 - **Backend**: A Go-based API server that handles business logic, user management, and communicates with the middleware.
 - **Middleware**: A Rust-based service that interacts directly with Taskchampion, providing RESTful access and handling end-to-end encryption and synchronization.
 - **Sync Server**: A Taskchampion synchronization server for backing up and syncing tasks across multiple clients.
-- **Database**: PostgreSQL is used for persistent storage.
+- **Database**: PostgreSQL/SQLite is used for persistent storage.
 
 ## Project Structure
 
