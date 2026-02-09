@@ -13,6 +13,7 @@ import (
 
 func NewRouter(
 	authService *services.AuthService,
+	taskService *services.TaskService,
 ) *gin.Engine {
 	router := gin.Default()
 
@@ -31,6 +32,7 @@ func NewRouter(
 	authMiddleware := middleware.NewAuthMiddleware(authService)
 	// Handler initialisieren
 	authHandler := handlers.NewAuthHandler(authService)
+	taskHandler := handlers.NewTasksHandler(taskService)
 	// public endpoints
 	api := router.Group("/api")
 	{
@@ -38,17 +40,14 @@ func NewRouter(
 	}
 
 	// potected endpoints
-	authenticated := api.Group("")
+	authenticated := api.Group("/")
 	authenticated.Use(authMiddleware.RequireAuth())
 	{
-		/*
-			authenticated.POST("/create", taskHandler.CreateTask)
-			authenticated.GET("/", taskHandler.DefaultReponse)
-			authenticated.GET("/jobs", taskHandler.GetAllTasks)
-			authenticated.GET("/job/:id", taskHandler.GetTask)
-			authenticated.PUT("/job/:id", taskHandler.UpdateTask)
-			authenticated.DELETE("job/:id", taskHandler.DeleteTask)
-		*/
+		authenticated.POST("/logout", authHandler.Logout)
+
+		api.GET("/tasks", taskHandler.GetAllTasks)
+		api.GET("/tasks/:uuid", taskHandler.GetTask)
+
 	}
 	return router
 }

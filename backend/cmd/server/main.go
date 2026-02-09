@@ -9,6 +9,7 @@ import (
 
 	"hufschlaeger.net/tcweb-backend/internal/application/services"
 	"hufschlaeger.net/tcweb-backend/internal/infrastructure/persistence"
+	"hufschlaeger.net/tcweb-backend/internal/infrastructure/taskwarrior"
 
 	"hufschlaeger.net/tcweb-backend/internal/infrastructure/http"
 	"hufschlaeger.net/tcweb-backend/pkg/config"
@@ -42,9 +43,14 @@ func main() {
 		2*time.Hour,
 	)
 
+	// TaskService erstellen
+	client := taskwarrior.NewClient("http://tc_middleware:3001", "")
+	taskRepo := taskwarrior.NewTaskRepository(client)
+	taskService := services.NewTaskService(taskRepo)
+
 	// HTTP-Server erstellen und starten
 	// server := http.NewServer(taskHandler)
-	server := http.NewRouter(authService)
+	server := http.NewRouter(authService, taskService)
 	go func() {
 		if err := server.Run(cfg.Server.Host + ":" + cfg.Server.Port); err != nil {
 			log.Fatalf("Server error: %v", err)

@@ -42,3 +42,19 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 		"message": "Authenticated user profile",
 	})
 }
+
+func (h *AuthHandler) Logout(c *gin.Context) {
+	userID, exists := c.MustGet("userID").(uint)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	// Token revoken
+	if err := h.authService.RevokeToken(c.Request.Context(), userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to logout"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully logged out"})
+}

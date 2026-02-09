@@ -18,11 +18,20 @@ func NewTaskService(taskRepo interfaces.TaskRepository) *TaskService {
 	}
 }
 
-func (s *TaskService) ListUsers(ctx context.Context, limit, offset int) ([]value_objects.Task, error) {
+func (s *TaskService) ListTasks(ctx context.Context) ([]*value_objects.Task, error) {
 	tasks, err := s.taskRepository.FindAll(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list tasks: %w", err)
 	}
 
 	return tasks, nil
+}
+
+func (s *TaskService) GetTaskById(ctx context.Context, uuid string) (*value_objects.Task, error) {
+	task, err := s.taskRepository.FindByUUID(ctx, uuid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get task: %w", err)
+	}
+
+	return task, nil
 }

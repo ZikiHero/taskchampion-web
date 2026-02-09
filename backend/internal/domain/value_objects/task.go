@@ -158,6 +158,10 @@ func (t *Task) SetPriority(p Priority) {
 	t.modified = time.Now()
 }
 
+func (t *Task) SetModified(modified time.Time) {
+	t.modified = modified
+}
+
 func (t *Task) SetDue(due time.Time) {
 	t.due = &due
 	t.modified = time.Now()
