@@ -6,11 +6,8 @@
       "description": "Frontend Angular dependencies",
       "matchManagers": ["npm"],
       "matchPaths": ["frontend/**"],
-      "schedule": ["before 3am on Monday"],
       "groupName": "Frontend: Angular",
       "matchPackagePatterns": ["^@angular"],
-      "matchUpdateTypes": ["minor", "patch"],
-      "minimumReleaseAge": "3 days",
       "assignees": ["daniel"],
       "reviewers": ["daniel"],
       "labels": ["frontend", "dependencies"]
