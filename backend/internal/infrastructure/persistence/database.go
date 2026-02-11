@@ -11,7 +11,6 @@ import (
 	"gorm.io/gorm/logger"
 
 	"hufschlaeger.net/tcweb-backend/internal/domain/models"
-	"hufschlaeger.net/tcweb-backend/internal/domain/value_objects"
 )
 
 var (
@@ -52,9 +51,8 @@ func NewDatabase(driver, dsn string, maxOpen, maxIdle int) (*gorm.DB, error) {
 		sqlDB.SetMaxIdleConns(maxIdle)
 		sqlDB.SetConnMaxLifetime(0) // 0 = unbegrenzt
 
-		// AutoMigrate für alle Modelle
+		// AutoMigrate for persistence models only (exclude value objects)
 		if err := db.AutoMigrate(
-			&value_objects.Task{},
 			&models.User{},
 		); err != nil {
 			log.Printf("Warning: AutoMigrate failed: %v", err)

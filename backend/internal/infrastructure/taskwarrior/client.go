@@ -78,10 +78,7 @@ func (c *Client) doRequest(req *http.Request, result interface{}) error {
 		return fmt.Errorf("request failed: %w", err)
 	}
 	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-
-		}
+		_ = Body.Close()
 	}(resp.Body)
 
 	if resp.StatusCode >= 400 {
