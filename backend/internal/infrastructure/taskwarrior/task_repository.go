@@ -76,15 +76,19 @@ func (t *TaskRepository) Update(ctx context.Context, task *value_objects.Task) e
 
 	err := t.client.Post(ctx, "/tasks", &requestDto, &responseDto)
 	if err != nil {
-		return fmt.Errorf("failed to create task: %w", err)
+		return fmt.Errorf("failed to update task: %w", err)
 	}
 
 	return nil
 }
 
 func (t *TaskRepository) Delete(ctx context.Context, uuid string) error {
-	//TODO implement me
-	panic("implement me")
+	var dto TaskDTO
+	err := t.client.Delete(ctx, "/tasks/"+uuid, &dto)
+	if err != nil {
+		return fmt.Errorf("failed to delete task: %w", err)
+	}
+	return err
 }
 
 func (t *TaskRepository) FindPendingTasks(ctx context.Context, tasks *[]value_objects.Task) error {

@@ -94,3 +94,12 @@ func (c *Client) doRequest(req *http.Request, result interface{}) error {
 
 	return nil
 }
+
+func (c *Client) Delete(ctx context.Context, path string, result interface{}) error {
+	req, err := c.buildRequest(ctx, http.MethodDelete, path, nil)
+	if err != nil {
+		return fmt.Errorf("failed to build request: %w", err)
+	}
+
+	return c.doRequest(req, result)
+}
