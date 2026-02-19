@@ -3,8 +3,8 @@ FROM docker.io/node:25-alpine AS builder
 WORKDIR /build
 
 # Cache dependencies layer
-COPY package*.json ./
-RUN npm ci
+COPY package*.json .
+RUN npm install
 
 # Build application
 COPY . .
