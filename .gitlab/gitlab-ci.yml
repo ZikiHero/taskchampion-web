@@ -17,7 +17,7 @@ stages:
 
 variables:
   CARGO_HOME: $CI_PROJECT_DIR/.cargo
-  RUST_VERSION: '1.93'
+  RUST_VERSION: '1.93.1'
   GOLANGCI_LINT_VERSION: '2.8.0'
 
 include:
