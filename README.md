@@ -1,4 +1,4 @@
-# Taskchampion Web
+# Taskchampion-Web
 
 A modern web-based task management system for [Taskwarrior](https://taskwarrior.org/) and [Taskchampion](https://github.com/GothenburgBitFactory/taskchampion). This project provides a full-stack environment to manage your tasks with a clean web interface, a robust Go backend, and a specialized Rust middleware for Taskchampion synchronization.
 
