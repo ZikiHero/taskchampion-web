@@ -1,9 +1,6 @@
 backend-lint:
   image: ${GITLAB_DEPENDENCY_PROXY}golangci/golangci-lint:v$GOLANGCI_LINT_VERSION
   tags: [ docker ]
-  rules:
-    - changes:
-        - backend/**/*
   stage: lint
   script:
     # Write the code coverage report to gl-code-quality-report.json
