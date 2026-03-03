@@ -1,0 +1,85 @@
+# deploy_container_github.yml
+
+.build_image: &build_image
+  image: quay.io/podman/stable
+  tags: [docker]
+  before_script:
+    - podman login ghcr.io -u "$GITHUB_USERNAME" --password "$GITHUB_TOKEN"
+
+# ─── Backend ────────────────────────────────────────────────────────────────
+
+build_backend_image:
+  <<: *build_image
+  stage: build
+  script:
+    - podman build -t ghcr.io/dhufe/tcweb-backend:$CI_COMMIT_SHA ./backend
+    - podman save ghcr.io/dhufe/tcweb-backend:$CI_COMMIT_SHA -o backend-image.tar
+  artifacts:
+    paths:
+      - backend-image.tar
+    expire_in: 1 hour
+
+deploy_backend_dev:
+  <<: *build_image
+  stage: release
+  needs:
+    - build_backend_image
+  script:
+    - podman load -i backend-image.tar
+    - podman tag ghcr.io/dhufe/tcweb-backend:$CI_COMMIT_SHA ghcr.io/dhufe/tcweb-backend:dev
+    - podman push ghcr.io/dhufe/tcweb-backend:dev
+  rules:
+    - if: '$CI_COMMIT_TAG == null'   # nur ohne Tag → dev
+
+deploy_backend_release:
+  <<: *build_image
+  stage: release
+  needs:
+    - build_backend_image
+  script:
+    - podman load -i backend-image.tar
+    - podman tag ghcr.io/dhufe/tcweb-backend:$CI_COMMIT_SHA ghcr.io/dhufe/tcweb-backend:$CI_COMMIT_TAG
+    - podman push ghcr.io/dhufe/tcweb-backend:$CI_COMMIT_TAG
+    - podman tag ghcr.io/dhufe/tcweb-backend:$CI_COMMIT_SHA ghcr.io/dhufe/tcweb-backend:latest
+    - podman push ghcr.io/dhufe/tcweb-backend:latest
+  rules:
+    - if: '$CI_COMMIT_TAG'           # nur mit Tag → release + latest
+
+# ─── Middleware ──────────────────────────────────────────────────────────────
+
+build_middleware_image:
+  <<: *build_image
+  stage: build
+  script:
+    - podman build -t ghcr.io/dhufe/tcweb-middleware:$CI_COMMIT_SHA ./middleware
+    - podman save ghcr.io/dhufe/tcweb-middleware:$CI_COMMIT_SHA -o middleware-image.tar
+  artifacts:
+    paths:
+      - middleware-image.tar
+    expire_in: 1 hour
+
+deploy_middleware_dev:
+  <<: *build_image
+  stage: release
+  needs:
+    - build_middleware_image
+  script:
+    - podman load -i middleware-image.tar
+    - podman tag ghcr.io/dhufe/tcweb-middleware:$CI_COMMIT_SHA ghcr.io/dhufe/tcweb-middleware:dev
+    - podman push ghcr.io/dhufe/tcweb-middleware:dev
+  rules:
+    - if: '$CI_COMMIT_TAG == null'
+
+deploy_middleware_release:
+  <<: *build_image
+  stage: release
+  needs:
+    - build_middleware_image
+  script:
+    - podman load -i middleware-image.tar
+    - podman tag ghcr.io/dhufe/tcweb-middleware:$CI_COMMIT_SHA ghcr.io/dhufe/tcweb-middleware:$CI_COMMIT_TAG
+    - podman push ghcr.io/dhufe/tcweb-middleware:$CI_COMMIT_TAG
+    - podman tag ghcr.io/dhufe/tcweb-middleware:$CI_COMMIT_SHA ghcr.io/dhufe/tcweb-middleware:latest
+    - podman push ghcr.io/dhufe/tcweb-middleware:latest
+  rules:
+    - if: '$CI_COMMIT_TAG'
