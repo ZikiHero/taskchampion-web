@@ -1,3 +1,30 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json"
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "baseBranches": ["develop"],
+  "assignees": ["daniel"],
+  "reviewers": ["daniel"],
+  "packageRules": [
+    {
+      "description": "Frontend Angular dependencies",
+      "matchManagers": ["npm"],
+      "matchPaths": ["frontend/**"],
+      "groupName": "Frontend: Angular",
+      "matchPackagePatterns": ["^@angular"],
+      "labels": ["frontend", "dependencies"]
+    },
+    {
+      "description": "Go backend dependencies",
+      "matchManagers": ["gomod"],
+      "matchPaths": ["backend/**"],
+      "groupName": "Backend: Go modules",
+      "labels": ["backend", "dependencies"]
+    },
+    {
+      "description": "Rust middleware dependencies",
+      "matchManagers": ["cargo"],
+      "matchPaths": ["middleware/**"],
+      "groupName": "Middleware: Rust crates",
+      "labels": ["middleware", "dependencies"]
+    }
+  ]
 }

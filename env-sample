@@ -1,0 +1,27 @@
+### postgres parameters
+POSTGRES_DB=taskchampion
+POSTGRES_USER=taskchampion
+POSTGRES_PASSWORD=tc_secret
+
+### sync-server parameters
+# must match postgresql settings
+# user:password@server:port/database
+CONNECTION="postgres://taskchampion:tc_secret@tc-postgres:5432/taskchampion"
+
+
+
+### middleware parameters
+
+# sync-server refers to the sync-server container (if running podman)
+TC_SYNC_SERVER_URL: "http://sync-server:8080"
+TC_SERVER_DIR: /app/data
+# must macht your taskwarrior config 
+TC_ENCRYPTION_PASSWORD: "my-super-secret-key"
+# must match your taskwarrior config
+TC_CLIENT_ID: "000e0000-e29b-41d4-a716-446655440000"
+# syncs after each API-Call against middleware
+AUTO_SYNC: "true"
+
+### rust general (middleware & sync-server)
+RUST_LOG: info
+

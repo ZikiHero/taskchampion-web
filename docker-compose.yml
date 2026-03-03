@@ -1,0 +1,78 @@
+version: "3.9"
+
+services:
+
+  sync-middleware:
+    container_name: tc_middleware
+    image: localhost/tcweb-middleware:dev
+    build:
+      context: middleware 
+    env_file:
+      - .env 
+    environment:
+        RUST_LOG: debug
+    volumes:
+      - middlewaredata:/app/data:z
+    ports:
+      - "3001:3001"
+    networks:
+      - tc_network
+
+  tcweb-backend:
+    container_name: tc_backend
+    image: localhost/tcweb-backend:dev
+    build:
+      context: backend 
+    env_file:
+      - .env 
+    volumes:
+      - backenddata:/app/data:z
+      - backendconfig:/add/config:z
+    ports:
+      - "8090:8080"
+    depends_on:
+      - sync-middleware
+    networks:
+      - tc_network
+
+  tcweb-frontend:
+    container_name: tc_frontend
+    image: localhost/tcweb-frontend:dev
+    build:
+      context: frontend 
+    env_file:
+      - .env 
+    ports:
+      - "4200:80"
+    depends_on:
+      - tcweb-backend
+    networks:
+      - tc_network
+
+
+  # bugwarrior:
+  #   image: localhost/bugwarrior:latest
+  #   build:
+  #     context: ./bugwarrior
+  #   container_name: tc-bugwarrior
+  #   depends_on:
+  #     - sync-server
+  #   volumes:
+  #     - bugwarriordata:/data:z
+  #     - ./bugwarriorrc:/bugwarriorrc:z
+  #   environment:
+  #     BUGWARRIORRC: /bugwarriorrc
+  #   command: >
+  #     sh -c "while true; do bugwarrior pull; sleep 3600; done"
+  #   networks:
+  #     - tc_network
+
+volumes:
+  # bugwarriordata:
+  middlewaredata:
+  backenddata:
+  backendconfig:
+
+networks:
+  tc_network:
+    driver: bridge

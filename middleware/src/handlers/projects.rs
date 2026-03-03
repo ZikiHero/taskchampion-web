@@ -37,16 +37,17 @@ pub async fn list_projects(
     let mut replica = state.replica.lock().await;
 
     let mut projects = std::collections::HashSet::new();
-    let all_tasks = match get_all_tasks(&mut replica).await {
-        Ok(t) => t,
+    match get_all_tasks(&mut replica).await {
+        Ok(all_tasks) => {
+            tracing::info!("list_projects: Found {} total tasks", all_tasks.len());
+            for task in all_tasks.values() {
+                if let Some(project) = task.get_value("project") {
+                    projects.insert(project.to_string());
+                }
+            }
+        },
         Err(status) => return status.into_response(),
     };
-
-    for task in all_tasks.values() {
-        if let Some(project) = task.get_value("project") {
-            projects.insert(project.to_string());
-        }
-    }
 
     let mut project_list: Vec<String> = projects.into_iter().collect();
     project_list.sort();

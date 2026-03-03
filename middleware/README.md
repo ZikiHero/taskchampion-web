@@ -49,7 +49,7 @@ A lightweight Rust-based middleware service that provides a REST API for [Taskch
 | `GET`        | `/health`                 | Service health check                  |
 | `POST`       | `/sync`                   | Manually trigger synchronization      |
 | **Tasks**    |                           |                                       |
-| `GET`        | `/tasks`                  | List all tasks (excluding deleted)    |
+| `GET`        | `/tasks`                  | List all tasks (can be filtered by `tag` or `project`) |
 | `POST`       | `/tasks`                  | Create a new task                     |
 | `GET`        | `/tasks/:uuid`            | Get details of a specific task        |
 | `PUT`        | `/tasks/:uuid`            | Update an existing task               |
@@ -66,6 +66,22 @@ A lightweight Rust-based middleware service that provides a REST API for [Taskch
 | `GET`        | `/tags/:name/details`     | Get detailed tag info                 |
 | `GET`        | `/tags/:name/tasks`       | List all tasks with a tag             |
 | `POST`       | `/tags/:name/tasks`       | Create a new task with a specific tag |
+
+### Example: List Tasks (with filtering)
+
+```bash
+# List all tasks
+curl -X GET http://localhost:3001/tasks
+
+# List tasks with tag "urgent"
+curl -X GET "http://localhost:3001/tasks?tag=urgent"
+
+# List tasks in project "Work"
+curl -X GET "http://localhost:3001/tasks?project=Work"
+
+# List tasks with both tag "urgent" and project "Work"
+curl -X GET "http://localhost:3001/tasks?tag=urgent&project=Work"
+```
 
 ### Example: Create a Task
 

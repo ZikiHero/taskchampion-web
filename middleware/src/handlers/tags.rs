@@ -48,6 +48,7 @@ pub async fn list_tags(
 
     match get_all_tasks(&mut replica).await {
         Ok(all_tasks) => {
+            tracing::info!("list_tags: Found {} total tasks", all_tasks.len());
             for task in all_tasks.values() {
                 // Only count tags from non-deleted tasks
                 if task.get_status() != Status::Deleted {
@@ -171,6 +172,9 @@ pub async fn get_tag_details(
                     tasks_preview.push(TaskResponse::from_task(task));
                 }
             }
+
+            // Sort preview by entry time (newest first)
+            tasks_preview.sort_by(|a, b| b.entry.cmp(&a.entry));
 
             Json(TagDetails {
                 name: tag_name,
@@ -316,6 +320,7 @@ mod tests {
             tags: None,
             priority: None,
             due: None,
+            project: None,
         };
 
         let response = create_task_with_tag(

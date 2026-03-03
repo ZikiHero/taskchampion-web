@@ -1,4 +1,4 @@
-test:
+middlewar-test:
   image: rust:${RUST_VERSION}
   tags: [docker]
   stage: test
@@ -8,16 +8,16 @@ test:
     - apt-get install -y libssl-dev pkg-config
     - cargo install cargo-tarpaulin || true
   script:
-    - cargo test --verbose
+    - cargo test --verbose -- --test-threads=1
     - cargo tarpaulin --out Xml --output-dir coverage
   artifacts:
     reports:
       coverage_report:
         coverage_format: cobertura
-        path: coverage/cobertura.xml
+        path: middleware/coverage/cobertura.xml
   coverage: '/^\d+\.\d+% coverage/'
 
-build:
+middleware-build:
   stage: build
   tags: [docker]
   image: rust:${RUST_VERSION}
@@ -27,5 +27,5 @@ build:
     - cargo build --release
   artifacts:
     paths:
-      - target/release/
+      - /middleware/target/release/
 

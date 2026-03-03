@@ -61,12 +61,22 @@ pub async fn perform_sync(state: &AppState) -> Result<(), String> {
     let mut replica = state.replica.lock().await;
     let mut server = state.server.lock().await;
 
+    tracing::info!("Starting replica sync...");
     let sync_fut = replica.sync(&mut **server, false);
     match UnsafeSendFuture(sync_fut).await {
-        Ok(_) => Ok(()),
+        Ok(_) => {
+            tracing::info!("Replica sync successful");
+            Ok(())
+        },
         Err(e) => {
-            error!("❌ Sync failed: {}", e);
-            Err(format!("Sync failed: {}", e))
+            let err_str = e.to_string();
+            if err_str.contains("404") || err_str.contains("not found") {
+                tracing::info!("ℹ️ Sync: Server returned 404 (Not Found). This is normal for a new client/empty sync set.");
+                Ok(())
+            } else {
+                error!("❌ Sync failed: {}", e);
+                Err(format!("Sync failed: {}", e))
+            }
         }
     }
 }
@@ -148,6 +158,10 @@ pub fn fill_task_from_create_request(
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
+    // Set entry time
+    task.set_entry(Some(chrono::Utc::now()), ops)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
     // Apply tags
     if let Some(tags) = payload.tags {
         apply_tags(task, tags, ops)?;
@@ -165,6 +179,15 @@ pub fn fill_task_from_create_request(
     if let Some(due) = payload.due {
         task.set_due(Some(due), ops).map_err(|e| {
             error!("Failed to set due: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+    }
+
+    // Apply project if provided
+    if let Some(project) = payload.project {
+        let value = if project.is_empty() { None } else { Some(project) };
+        task.set_value("project".to_string(), value, ops).map_err(|e| {
+            error!("Failed to set project: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
     }

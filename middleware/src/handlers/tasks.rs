@@ -14,16 +14,49 @@ use super::{AppState, helpers::*};
 // TASK HANDLERS
 // ============================================
 
-pub async fn list_tasks(State(state): State<AppState>) -> impl IntoResponse {
+use axum::extract::Query;
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize)]
+pub struct TaskFilter {
+    pub tag: Option<String>,
+    pub project: Option<String>,
+}
+
+pub async fn list_tasks(
+    State(state): State<AppState>,
+    Query(filter): Query<TaskFilter>,
+) -> impl IntoResponse {
     let mut replica = state.replica.lock().await;
 
     match get_all_tasks(&mut replica).await {
         Ok(all_tasks) => {
+            tracing::info!("Found {} total tasks in replica", all_tasks.len());
             let tasks: Vec<TaskResponse> = all_tasks
                 .values()
-                .filter(|task| task.get_status() != Status::Deleted)
+                .filter(|task| {
+                    let is_not_deleted = task.get_status() != Status::Deleted;
+                    
+                    // Apply tag filter
+                    let matches_tag = if let Some(ref tag_filter) = filter.tag {
+                        task.get_tags().any(|t| t.to_string() == *tag_filter)
+                    } else {
+                        true
+                    };
+
+                    // Apply project filter
+                    let matches_project = if let Some(ref project_filter) = filter.project {
+                        task.get_value("project").map(|v| v == project_filter).unwrap_or(false)
+                    } else {
+                        true
+                    };
+
+                    is_not_deleted && matches_tag && matches_project
+                })
                 .map(TaskResponse::from_task)
                 .collect();
+            
+            tracing::info!("Returning {} non-deleted tasks", tasks.len());
 
             Json(tasks).into_response()
         }
@@ -112,6 +145,12 @@ pub async fn update_task(
                 .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
         }
 
+        if let Some(project) = payload.project {
+            let value = if project.is_empty() { None } else { Some(project) };
+            task.set_value("project".to_string(), value, &mut ops)
+                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        }
+
         Ok(())
     })();
 
@@ -162,4 +201,56 @@ pub async fn delete_task(
     }
 
     StatusCode::NO_CONTENT.into_response()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::handlers::helpers::create_test_state;
+    use taskchampion::Status;
+
+    async fn add_test_task_with_tag(state: &AppState, description: &str, tag: Option<&str>, project: Option<&str>) {
+        let mut replica = state.replica.lock().await;
+        let mut ops = Operations::new();
+        let mut task = replica.create_task(taskchampion::Uuid::new_v4(), &mut ops).await.unwrap();
+        task.set_description(description.to_string(), &mut ops).unwrap();
+        task.set_status(Status::Pending, &mut ops).unwrap();
+        if let Some(t) = tag {
+            let tag_obj = taskchampion::Tag::try_from(t).unwrap();
+            task.add_tag(&tag_obj, &mut ops).unwrap();
+        }
+        if let Some(p) = project {
+            task.set_value("project".to_string(), Some(p.to_string()), &mut ops).unwrap();
+        }
+        replica.commit_operations(ops).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_list_tasks_filtering() {
+        let state = create_test_state().await;
+        
+        add_test_task_with_tag(&state, "Task 1", Some("urgent"), Some("work")).await;
+        add_test_task_with_tag(&state, "Task 2", Some("home"), Some("personal")).await;
+        add_test_task_with_tag(&state, "Task 3", None, Some("work")).await;
+
+        // Test filter by tag
+        let filter = TaskFilter { tag: Some("urgent".to_string()), project: None };
+        let response = list_tasks(State(state.clone()), Query(filter)).await.into_response();
+        assert_eq!(response.status(), StatusCode::OK);
+        
+        // Test filter by project
+        let filter = TaskFilter { tag: None, project: Some("work".to_string()) };
+        let response = list_tasks(State(state.clone()), Query(filter)).await.into_response();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        // Test filter by both
+        let filter = TaskFilter { tag: Some("urgent".to_string()), project: Some("work".to_string()) };
+        let response = list_tasks(State(state.clone()), Query(filter)).await.into_response();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        // Test filter by non-existent tag
+        let filter = TaskFilter { tag: Some("nonexistent".to_string()), project: None };
+        let response = list_tasks(State(state.clone()), Query(filter)).await.into_response();
+        assert_eq!(response.status(), StatusCode::OK);
+    }
 }
