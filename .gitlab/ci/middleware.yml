@@ -17,15 +17,4 @@ middlewar-test:
         path: middleware/coverage/cobertura.xml
   coverage: '/^\d+\.\d+% coverage/'
 
-middleware-build:
-  stage: build
-  tags: [docker]
-  image: rust:${RUST_VERSION}
-  before_script:
-    - cd middleware
-  script:
-    - cargo build --release
-  artifacts:
-    paths:
-      - /middleware/target/release/
 
