@@ -30,9 +30,6 @@ backend-test:
     - go mod tidy
   script:
     - gotestsum --junitfile report.xml --format testname
-  rules:
-    - changes:
-        - backend/**/*
   artifacts:
     when: always
     reports:
