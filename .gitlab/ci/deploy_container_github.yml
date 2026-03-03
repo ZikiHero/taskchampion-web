@@ -12,13 +12,13 @@ build_backend_image:
   <<: *build_image
   stage: build
   script:
-    - cd backend 
-    - podman build -t ghcr.io/dhufe/tcweb-backend:$CI_COMMIT_SHA .
+    - podman build -f backend/Dockerfile -t ghcr.io/dhufe/tcweb-backend:$CI_COMMIT_SHA ./backend
     - podman save ghcr.io/dhufe/tcweb-backend:$CI_COMMIT_SHA -o backend-image.tar
   artifacts:
     paths:
       - backend-image.tar
     expire_in: 1 hour
+
 
 deploy_backend_dev:
   <<: *build_image
@@ -52,8 +52,7 @@ build_middleware_image:
   <<: *build_image
   stage: build
   script:
-    - cd middleware 
-    - podman build -t ghcr.io/dhufe/tcweb-middleware:$CI_COMMIT_SHA ./
+    - podman build -f middleware/Dockerfile -t ghcr.io/dhufe/tcweb-middleware:$CI_COMMIT_SHA ./middleware
     - podman save ghcr.io/dhufe/tcweb-middleware:$CI_COMMIT_SHA -o middleware-image.tar
   artifacts:
     paths:
@@ -92,8 +91,7 @@ build_frontend_image:
   <<: *build_image
   stage: build
   script:
-    - cd frontend 
-    - podman build -t ghcr.io/dhufe/tcweb-frontend:$CI_COMMIT_SHA .
+    - podman build -f frontend/Dockerfile -t ghcr.io/dhufe/tcweb-frontend:$CI_COMMIT_SHA ./frontend
     - podman save ghcr.io/dhufe/tcweb-frontend:$CI_COMMIT_SHA -o frontend-image.tar
   artifacts:
     paths:
