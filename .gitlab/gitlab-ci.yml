@@ -2,6 +2,7 @@
 stages:
   - test
   - build
+  - release
 
 cache:
   key: ${CI_COMMIT_REF_SLUG}
