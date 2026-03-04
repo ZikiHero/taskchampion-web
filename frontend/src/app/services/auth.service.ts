@@ -5,12 +5,13 @@ import {LoginRequest} from '../models/login-request.model';
 import {LoginResponse} from '../models/login-response.model';
 import {User} from '../models/user.model';
 import {Router} from '@angular/router';
+import {environment} from '../../environments/environment'
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:8090/api';
+  private apiUrl = environment.apiUrl;
   private currentUserSubject = new BehaviorSubject<User | null>(this.getCurrentUser());
   public currentUser$ = this.currentUserSubject.asObservable();
 
