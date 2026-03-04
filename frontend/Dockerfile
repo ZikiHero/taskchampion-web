@@ -23,5 +23,8 @@ RUN rm -rf ./*
 
 # Copy built app
 COPY --from=builder /build/dist/browser .
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
 EXPOSE 80
+ENTRYPOINT ["/docker-entrypoint.sh"]
