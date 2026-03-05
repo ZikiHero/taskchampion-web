@@ -43,7 +43,7 @@ func main() {
 	)
 
 	// TaskwarriorService erstellen
-	client := taskwarrior.NewClient("http://tcweb_middleware:3001", "")
+	client := taskwarrior.NewClient(cfg.Middleware.BaseURL, "")
 	taskRepo := taskwarrior.NewTaskRepository(client)
 	taskService := services.NewTaskService(taskRepo)
 
