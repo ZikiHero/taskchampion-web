@@ -8,7 +8,7 @@
 
 # ─── Backend ────────────────────────────────────────────────────────────────
 
-build_backend_image:
+build_backend_dev:
   <<: *build_image
   stage: build
   script:
@@ -19,30 +19,54 @@ build_backend_image:
       - backend-image.tar
     expire_in: 1 hour
   rules:
+    - if: '$CI_COMMIT_TAG'
+      when: never
     - changes:
-        - backend/**/* 
+        - backend/**/*
         - .gitlab-ci.yml
+      when: on_success
 
 deploy_backend_dev:
   <<: *build_image
   stage: release
   needs:
-    - build_backend_image
+    - job: build_backend_dev
+      artifacts: true
   script:
     - podman load -i backend-image.tar
     - podman tag ghcr.io/dhufe/tcweb-backend:$CI_COMMIT_SHA ghcr.io/dhufe/tcweb-backend:dev
     - podman push ghcr.io/dhufe/tcweb-backend:dev
   rules:
-    - if: '$CI_COMMIT_TAG == null'
+    - if: '$CI_COMMIT_TAG'
+      when: never
     - changes:
-        - backend/**/* 
+        - backend/**/*
         - .gitlab-ci.yml
+      when: on_success
+
+build_backend_release:
+  <<: *build_image
+  stage: build
+  script:
+    - podman build -f backend/Dockerfile -t ghcr.io/dhufe/tcweb-backend:$CI_COMMIT_SHA ./backend
+    - podman save ghcr.io/dhufe/tcweb-backend:$CI_COMMIT_SHA -o backend-image.tar
+  artifacts:
+    paths:
+      - backend-image.tar
+    expire_in: 1 hour
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      changes:
+        - backend/**/*
+        - .gitlab-ci.yml
+      when: on_success
 
 deploy_backend_release:
   <<: *build_image
   stage: release
   needs:
-    - build_backend_image
+    - job: build_backend_release
+      artifacts: true
   script:
     - podman load -i backend-image.tar
     - podman tag ghcr.io/dhufe/tcweb-backend:$CI_COMMIT_SHA ghcr.io/dhufe/tcweb-backend:$CI_COMMIT_TAG
@@ -50,14 +74,15 @@ deploy_backend_release:
     - podman tag ghcr.io/dhufe/tcweb-backend:$CI_COMMIT_SHA ghcr.io/dhufe/tcweb-backend:latest
     - podman push ghcr.io/dhufe/tcweb-backend:latest
   rules:
-    - if: '$CI_COMMIT_TAG' 
-    - changes:
-        - backend/**/* 
+    - if: '$CI_COMMIT_TAG'
+      changes:
+        - backend/**/*
         - .gitlab-ci.yml
+      when: on_success
 
 # ─── Middleware ──────────────────────────────────────────────────────────────
 
-build_middleware_image:
+build_middleware_dev:
   <<: *build_image
   stage: build
   script:
@@ -68,30 +93,54 @@ build_middleware_image:
       - middleware-image.tar
     expire_in: 1 hour
   rules:
+    - if: '$CI_COMMIT_TAG'
+      when: never
     - changes:
-        - middleware/**/* 
+        - middleware/**/*
         - .gitlab-ci.yml
+      when: on_success
 
 deploy_middleware_dev:
   <<: *build_image
   stage: release
   needs:
-    - build_middleware_image
+    - job: build_middleware_dev
+      artifacts: true
   script:
     - podman load -i middleware-image.tar
     - podman tag ghcr.io/dhufe/tcweb-middleware:$CI_COMMIT_SHA ghcr.io/dhufe/tcweb-middleware:dev
     - podman push ghcr.io/dhufe/tcweb-middleware:dev
   rules:
-    - if: '$CI_COMMIT_TAG == null'
+    - if: '$CI_COMMIT_TAG'
+      when: never
     - changes:
-        - middleware/**/* 
+        - middleware/**/*
         - .gitlab-ci.yml
+      when: on_success
+
+build_middleware_release:
+  <<: *build_image
+  stage: build
+  script:
+    - podman build -f middleware/Dockerfile -t ghcr.io/dhufe/tcweb-middleware:$CI_COMMIT_SHA ./middleware
+    - podman save ghcr.io/dhufe/tcweb-middleware:$CI_COMMIT_SHA -o middleware-image.tar
+  artifacts:
+    paths:
+      - middleware-image.tar
+    expire_in: 1 hour
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      changes:
+        - middleware/**/*
+        - .gitlab-ci.yml
+      when: on_success
 
 deploy_middleware_release:
   <<: *build_image
   stage: release
   needs:
-    - build_middleware_image
+    - job: build_middleware_release
+      artifacts: true
   script:
     - podman load -i middleware-image.tar
     - podman tag ghcr.io/dhufe/tcweb-middleware:$CI_COMMIT_SHA ghcr.io/dhufe/tcweb-middleware:$CI_COMMIT_TAG
@@ -100,14 +149,14 @@ deploy_middleware_release:
     - podman push ghcr.io/dhufe/tcweb-middleware:latest
   rules:
     - if: '$CI_COMMIT_TAG'
-    - changes:
-        - middleware/**/* 
+      changes:
+        - middleware/**/*
         - .gitlab-ci.yml
-
+      when: on_success
 
 # ─── Frontend ───────────────────────────────────────────────────────────────
 
-build_frontend_image:
+build_frontend_dev:
   <<: *build_image
   stage: build
   script:
@@ -118,31 +167,54 @@ build_frontend_image:
       - frontend-image.tar
     expire_in: 1 hour
   rules:
+    - if: '$CI_COMMIT_TAG'
+      when: never
     - changes:
-        - frontend/**/* 
+        - frontend/**/*
         - .gitlab-ci.yml
-
+      when: on_success
 
 deploy_frontend_dev:
   <<: *build_image
   stage: release
   needs:
-    - build_frontend_image
+    - job: build_frontend_dev
+      artifacts: true
   script:
     - podman load -i frontend-image.tar
     - podman tag ghcr.io/dhufe/tcweb-frontend:$CI_COMMIT_SHA ghcr.io/dhufe/tcweb-frontend:dev
     - podman push ghcr.io/dhufe/tcweb-frontend:dev
   rules:
-    - if: '$CI_COMMIT_TAG == null'
+    - if: '$CI_COMMIT_TAG'
+      when: never
     - changes:
-        - frontend/**/* 
+        - frontend/**/*
         - .gitlab-ci.yml
+      when: on_success
+
+build_frontend_release:
+  <<: *build_image
+  stage: build
+  script:
+    - podman build -f frontend/Dockerfile -t ghcr.io/dhufe/tcweb-frontend:$CI_COMMIT_SHA ./frontend
+    - podman save ghcr.io/dhufe/tcweb-frontend:$CI_COMMIT_SHA -o frontend-image.tar
+  artifacts:
+    paths:
+      - frontend-image.tar
+    expire_in: 1 hour
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      changes:
+        - frontend/**/*
+        - .gitlab-ci.yml
+      when: on_success
 
 deploy_frontend_release:
   <<: *build_image
   stage: release
   needs:
-    - build_frontend_image
+    - job: build_frontend_release
+      artifacts: true
   script:
     - podman load -i frontend-image.tar
     - podman tag ghcr.io/dhufe/tcweb-frontend:$CI_COMMIT_SHA ghcr.io/dhufe/tcweb-frontend:$CI_COMMIT_TAG
@@ -151,8 +223,7 @@ deploy_frontend_release:
     - podman push ghcr.io/dhufe/tcweb-frontend:latest
   rules:
     - if: '$CI_COMMIT_TAG'
-    - changes:
-        - frontend/**/* 
+      changes:
+        - frontend/**/*
         - .gitlab-ci.yml
-
-
+      when: on_success
