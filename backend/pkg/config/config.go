@@ -8,6 +8,9 @@ import (
 )
 
 type Config struct {
+	Middleware struct {
+		BaseURL string `yaml:"host_middleware"`
+	} `yaml:"middleware"`
 	Server struct {
 		Port string `yaml:"port"`
 		Host string `yaml:"host"`
@@ -30,6 +33,11 @@ type Config struct {
 func LoadConfig(path string) (*Config, error) {
 	// Standardkonfiguration laden
 	defaultConfig := &Config{
+		Middleware: struct {
+			BaseURL string `yaml:"host_middleware"`
+		}{
+			BaseURL: "http://tcweb_middleware",
+		},
 		Server: struct {
 			Port string `yaml:"port"`
 			Host string `yaml:"host"`
