@@ -3,7 +3,9 @@ version: "3.9"
 services:
   sync-middleware:
     container_name: tc_middleware
-    image: ghcr.io/dhufe/tcweb-middleware:dev
+    image: localhost/tcweb-middleware:dev
+    build:
+      context: middleware
     env_file:
       - .env 
     environment:
@@ -17,12 +19,14 @@ services:
 
   tcweb-backend:
     container_name: tc_backend
-    image: ghcr.io/dhufe/tcweb-backend:dev
+    image: localhost/tcweb-backend:dev
+    build:
+      context: backend
     env_file:
       - .env 
     volumes:
       - backenddata:/app/data:z
-      - backendconfig:/add/config:z
+      - backendconfig:/app/config:z
     ports:
       - "8090:8080"
     depends_on:
@@ -32,7 +36,9 @@ services:
 
   tcweb-frontend:
     container_name: tc_frontend
-    image: ghcr.io/dhufe/tcweb-frontend:dev
+    image: localhost/tcweb-frontend:dev
+    build:
+      context: frontend 
     env_file:
       - .env 
     ports:
@@ -40,28 +46,8 @@ services:
     networks:
       - tc_network
 
-
-  # bugwarrior:
-  #   image: localhost/bugwarrior:latest
-  #   build:
-  #     context: ./bugwarrior
-  #   container_name: tc-bugwarrior
-  #   depends_on:
-  #     - sync-server
-  #   volumes:
-  #     - bugwarriordata:/data:z
-  #     - ./bugwarriorrc:/bugwarriorrc:z
-  #   environment:
-  #     BUGWARRIORRC: /bugwarriorrc
-  #   command: >
-  #     sh -c "while true; do bugwarrior pull; sleep 3600; done"
-  #   networks:
-  #     - tc_network
-
 volumes:
-  pgdata:
   syncdata:
-  # bugwarriordata:
   middlewaredata:
   backenddata:
   backendconfig:
