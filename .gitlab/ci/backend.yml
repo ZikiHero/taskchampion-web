@@ -15,6 +15,10 @@ backend-lint:
     paths:
       - backend/gl-code-quality-report.json
   allow_failure: true
+  rules:
+    - changes:
+        - backend/**/* 
+        - .gitlab-ci.yml
 
 backend-test:
   image: docker.io/golang:1.25.7-alpine
@@ -31,3 +35,7 @@ backend-test:
     when: always
     reports:
       junit: backend/report.xml
+  rules:
+    - changes:
+        - backend/**/* 
+        - .gitlab-ci.yml

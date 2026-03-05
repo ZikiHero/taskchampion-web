@@ -16,5 +16,8 @@ middlewar-test:
         coverage_format: cobertura
         path: middleware/coverage/cobertura.xml
   coverage: '/^\d+\.\d+% coverage/'
-
+  rules:
+    - changes:
+        - middleware/**/*
+        - .gitlab-ci.yml
 
