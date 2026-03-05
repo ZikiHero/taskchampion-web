@@ -8,10 +8,9 @@ import (
 	"time"
 
 	"hufschlaeger.net/tcweb-backend/internal/application/services"
+	"hufschlaeger.net/tcweb-backend/internal/infrastructure/http"
 	"hufschlaeger.net/tcweb-backend/internal/infrastructure/persistence"
 	"hufschlaeger.net/tcweb-backend/internal/infrastructure/taskwarrior"
-
-	"hufschlaeger.net/tcweb-backend/internal/infrastructure/http"
 	"hufschlaeger.net/tcweb-backend/pkg/config"
 )
 
@@ -44,7 +43,7 @@ func main() {
 	)
 
 	// TaskwarriorService erstellen
-	client := taskwarrior.NewClient("http://tc_middleware:3001", "")
+	client := taskwarrior.NewClient("http://tcweb_middleware:3001", "")
 	taskRepo := taskwarrior.NewTaskRepository(client)
 	taskService := services.NewTaskService(taskRepo)
 
