@@ -10,6 +10,7 @@ import (
 	"hufschlaeger.net/tcweb-backend/internal/application/services"
 	"hufschlaeger.net/tcweb-backend/internal/infrastructure/http"
 	"hufschlaeger.net/tcweb-backend/internal/infrastructure/persistence"
+	"hufschlaeger.net/tcweb-backend/internal/infrastructure/persistence/migrations"
 	"hufschlaeger.net/tcweb-backend/internal/infrastructure/taskwarrior"
 	"hufschlaeger.net/tcweb-backend/pkg/config"
 )
@@ -26,21 +27,38 @@ func main() {
 		cfg.Database.MaxOpen,
 		cfg.Database.MaxIdle,
 	)
+
+	userConfig := migrations.SeedConfig{
+		Email:          getEnvOrDefault("TCWEB_USER_EMAIL", "demo@example.com"),
+		HashedPassword: getEnvOrDefault("TCWEB_USER_PASSWORD", "demoPassword"),
+	}
+
 	if err != nil {
 		log.Fatalf("Failed to initialize the database: %v\n", err)
 	}
 
-	// Repository erstellen
+	// User-Repository erstellen
 	userRepo := persistence.NewUserRepository(db)
-
-	// Service erstellen
-
-	// Worker erstellen (max. Anzahl v. parallelen Tasks)
+	// Auth-Service erstellen
 	authService := services.NewAuthService(
 		userRepo,
 		cfg.Security.SecretKey,
 		2*time.Hour,
 	)
+
+	userConfig.HashedPassword, err = authService.HashPassword(userConfig.HashedPassword)
+	if err != nil {
+		log.Fatalf("Failed to hash password: %v\n", err)
+	}
+
+	err = migrations.Migrate(db, userConfig)
+	if err != nil {
+		log.Printf("Failed to migrate database: %v\n", err)
+		err := migrations.Rollback(db, userConfig)
+		if err != nil {
+			log.Fatalf("Failed to rollback migration database: %v\n", err)
+		}
+	}
 
 	// TaskwarriorService erstellen
 	client := taskwarrior.NewClient(cfg.Middleware.BaseURL, "")
@@ -63,4 +81,11 @@ func main() {
 	log.Println("Shutting down server...")
 
 	log.Println("Server exited")
+}
+
+func getEnvOrDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }

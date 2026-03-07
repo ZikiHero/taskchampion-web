@@ -8,7 +8,12 @@ POSTGRES_PASSWORD=tc_secret
 # user:password@server:port/database
 CONNECTION="postgres://taskchampion:tc_secret@tc-postgres:5432/taskchampion"
 
+### Backend parameters
+TCWEB_USER_EMAIL="test@test.org"
+TCWEB_USER_PASSWORD="testpassword"
 
+### Frontend parameters
+API_URL="http://tc_backend/api"
 
 ### middleware parameters
 
