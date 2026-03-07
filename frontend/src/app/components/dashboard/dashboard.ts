@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import {Router, RouterOutlet} from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,18 +10,8 @@ import { MatDividerModule } from '@angular/material/divider';
 import { AuthService } from '../../services/auth.service';
 import {TaskwarriorService} from '../../services/taskwarrior.service';
 import {Task} from '../../models/task.model';
-import {MatTooltip} from '@angular/material/tooltip';
-import {MatChip} from '@angular/material/chips';
-import {
-  MatCell, MatCellDef, MatColumnDef,
-  MatHeaderCell, MatHeaderCellDef,
-  MatHeaderRow,
-  MatHeaderRowDef,
-  MatRow,
-  MatRowDef,
-  MatTable
-} from '@angular/material/table';
-import {MatProgressSpinner} from '@angular/material/progress-spinner';
+import {MatSidenav, MatSidenavContainer, MatSidenavContent} from '@angular/material/sidenav';
+import {Sidebar} from './sidebar/sidebar/sidebar';
 
 @Component({
   selector: 'app-dashboard',
@@ -34,19 +24,11 @@ import {MatProgressSpinner} from '@angular/material/progress-spinner';
     MatIconModule,
     MatMenuModule,
     MatDividerModule,
-    MatTooltip,
-    MatChip,
-    MatCell,
-    MatHeaderCell,
-    MatTable,
-    MatProgressSpinner,
-    MatRow,
-    MatHeaderRow,
-    MatHeaderRowDef,
-    MatRowDef,
-    MatHeaderCellDef,
-    MatCellDef,
-    MatColumnDef
+    MatSidenavContent,
+    MatSidenavContainer,
+    MatSidenav,
+    RouterOutlet,
+    Sidebar
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss'
@@ -58,6 +40,7 @@ export class DashboardComponent implements OnInit {
   tasks: Task[] = [];
   isLoadingTasks = false;
   displayedColumns: string[] = ['status', 'description', 'project', 'due', 'actions'];
+  protected sidenavOpened: any;
 
   constructor(
     private authService: AuthService,
@@ -159,5 +142,9 @@ export class DashboardComponent implements OnInit {
         console.error('Error updating task:', error);
       }
     });*/
+  }
+
+  protected currentTitle() {
+    return "";
   }
 }
