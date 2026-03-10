@@ -28,9 +28,9 @@ services:
       - backenddata:/app/data:z
       - backendconfig:/app/config:z
     ports:
-      - "8090:8080"
+      - "8080:8080"
     depends_on:
-      sync-middleware
+      - sync-middleware
     networks:
       - tc_network
 
