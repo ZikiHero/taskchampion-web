@@ -5,11 +5,12 @@
   "reviewers": ["daniel"],
   "packageRules": [
     {
-      "description": "Frontend Angular dependencies",
+      "description": "Frontend Angular dependencies (including TypeScript pinned to Angular-compatible range)",
       "matchManagers": ["npm"],
       "matchPaths": ["frontend/**"],
       "groupName": "Frontend: Angular",
-      "matchPackagePatterns": ["^@angular"],
+      "matchPackagePatterns": ["^@angular", "^typescript$"],
+      "allowedVersions": "<6.0.0",
       "labels": ["frontend", "dependencies"]
     },
     {
