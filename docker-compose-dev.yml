@@ -8,8 +8,6 @@ services:
       context: middleware
     env_file:
       - .env 
-    environment:
-        RUST_LOG: debug
     volumes:
       - middlewaredata:/app/data:z
     ports:
