@@ -10,7 +10,6 @@
       "matchPaths": ["frontend/**"],
       "groupName": "Frontend: Angular",
       "matchPackagePatterns": ["^@angular", "^typescript$"],
-      "allowedVersions": "<6.0.0",
       "labels": ["frontend", "dependencies"]
     },
     {
