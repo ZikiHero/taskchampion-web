@@ -6,22 +6,25 @@
   "packageRules": [
     {
       "description": "Frontend Angular dependencies (including TypeScript pinned to Angular-compatible range)",
-      "matchManagers": ["npm"],
+      "matchManagers": ["npm", "dockerfile"],
       "matchPaths": ["frontend/**"],
       "groupName": "Frontend: Angular",
-      "matchPackagePatterns": ["^@angular", "^typescript$"],
-      "labels": ["frontend", "dependencies"]
+      "matchPackagePatterns": ["^@angular", "^typescript$", "dockerfile"],
+      "labels": ["frontend", "dependencies"],
+      "schedule": ["before 3am on Monday"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "minimumReleaseAge": "3 days"
     },
     {
       "description": "Go backend dependencies",
-      "matchManagers": ["gomod"],
+      "matchManagers": ["gomod", "dockerfile"],
       "matchPaths": ["backend/**"],
       "groupName": "Backend: Go modules",
       "labels": ["backend", "dependencies"]
     },
     {
       "description": "Rust middleware dependencies",
-      "matchManagers": ["cargo"],
+      "matchManagers": ["cargo", "dockerfile"],
       "matchPaths": ["middleware/**"],
       "groupName": "Middleware: Rust crates",
       "labels": ["middleware", "dependencies"]
