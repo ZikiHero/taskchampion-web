@@ -68,6 +68,25 @@ Each component has its own detailed README with development instructions:
 - [Frontend Documentation](./frontend/README.md)
 - [Middleware Documentation](./middleware/README.md)
 
+### DevContainer Setup (Frontend)
+
+The frontend includes a pre-configured [DevContainer](https://containers.dev/) setup for VS Code. This allows you to start developing immediately without installing Node.js or the Angular CLI on your local machine.
+
+#### Using with Docker
+1. Ensure you have the **Dev Containers** extension installed in VS Code.
+2. Open the project root in VS Code.
+3. When prompted, click **Reopen in Container** (or use the Command Palette: `Ctrl+Shift+P` -> `Dev Containers: Reopen in Container`).
+
+#### Using with Podman
+If you prefer [Podman](https://podman.io/), follow these steps:
+1. Install the **Dev Containers** extension.
+2. In VS Code Settings (`Ctrl+,`), search for `dev.containers.dockerPath` and set it to `podman`.
+3. If you are on Linux with SELinux enabled, you might need to add the following to your `frontend/.devcontainer/devcontainer.json` if you encounter permission issues:
+   ```json
+   "runArgs": ["--security-opt", "label=disable"]
+   ```
+4. Open the project and select **Reopen in Container**.
+
 ## License
 
 See the LICENSE files in individual component directories.

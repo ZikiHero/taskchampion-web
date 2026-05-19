@@ -1,4 +1,4 @@
-FROM docker.io/node:26-alpine AS builder
+FROM docker.io/node:26.1.0-alpine3.22 AS builder
 
 WORKDIR /build
 

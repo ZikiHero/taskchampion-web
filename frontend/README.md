@@ -12,14 +12,14 @@ A modern, responsive web interface for managing Taskwarrior tasks, built with An
 
 ## Technology Stack
 
-- **Framework**: [Angular](https://angular.dev/) 20
+- **Framework**: [Angular](https://angular.dev/) 21
 - **UI Components**: [Angular Material](https://material.angular.io/)
 - **Styling**: SCSS
 - **State Management**: RxJS
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) (v25 recommended)
+- [Node.js](https://nodejs.org/) (v24 recommended)
 - [npm](https://www.npmjs.com/)
 - [Angular CLI](https://angular.dev/tools/cli)
 
@@ -58,6 +58,21 @@ To build and run the frontend using Docker:
    ```bash
    docker run -p 4200:80 taskchampion-frontend
    ```
+
+### DevContainer
+
+A DevContainer configuration is provided for a seamless development experience.
+
+#### Quick Start with VS Code
+1. Install the **Dev Containers** extension.
+2. Open the `frontend` folder or the project root in VS Code.
+3. Use the command `Dev Containers: Reopen in Container`.
+
+#### Podman Support
+To use Podman instead of Docker:
+- Set `"dev.containers.dockerPath": "podman"` in your VS Code `settings.json`.
+- On Linux with SELinux, you may need to add `"runArgs": ["--security-opt", "label=disable"]` to `.devcontainer/devcontainer.json`.
+- If you use `podman-compose`, also set `"dev.containers.dockerComposePath": "podman-compose"`.
 
 ## Project Structure
 
