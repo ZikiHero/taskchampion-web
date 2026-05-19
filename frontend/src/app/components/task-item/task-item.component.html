@@ -1,0 +1,106 @@
+<div *ngIf="task" class="task-item" [class.completed]="task.isCompleted" [class.editing]="isEditing()">
+  @if (!isEditing()) {
+    <div class="task-checkbox-container">
+      <mat-checkbox
+        [checked]="task.isCompleted"
+        (change)="taskService.toggleTask(task.id)"
+        [class]="'priority-' + task.priority">
+      </mat-checkbox>
+    </div>
+    <div class="task-content-container" (click)="startEdit()">
+      <div class="task-content">{{ task.content }}</div>
+      <div class="task-description" *ngIf="task.description">{{ task.description }}</div>
+      <div class="task-meta" *ngIf="task.dueDate || task.projectId || (task.tags && task.tags.length)">
+        <span class="due-date" *ngIf="task.dueDate" [class.overdue]="isOverdue()">
+          <mat-icon>calendar_today</mat-icon>
+          {{ task.dueDate | date:'d MMM' }}
+        </span>
+        <span class="project-tag" *ngIf="getProjectName()">
+          <mat-icon>fiber_manual_record</mat-icon>
+          {{ getProjectName() }}
+        </span>
+        <span class="tags-container" *ngIf="task.tags && task.tags.length">
+          <mat-icon>label</mat-icon>
+          {{ task.tags.join(', ') }}
+        </span>
+      </div>
+    </div>
+    <div class="task-actions">
+      <button mat-icon-button (click)="startEdit()" matTooltip="Edit task">
+        <mat-icon>edit</mat-icon>
+      </button>
+      <button mat-icon-button (click)="taskService.deleteTask(task.id)" matTooltip="Delete task">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </div>
+  } @else {
+    <div class="edit-form">
+      <mat-form-field appearance="outline" class="full-width">
+        <input matInput [(ngModel)]="editContent" placeholder="Task name">
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <textarea matInput [(ngModel)]="editDescription" placeholder="Description"></textarea>
+      </mat-form-field>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Due Date</mat-label>
+          <input matInput [matDatepicker]="editPicker" [(ngModel)]="editDueDate">
+          <mat-datepicker-toggle matSuffix [for]="editPicker"></mat-datepicker-toggle>
+          <mat-datepicker #editPicker></mat-datepicker>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Priority</mat-label>
+          <mat-select [(ngModel)]="editPriority">
+            <mat-option value="L">Priority L</mat-option>
+            <mat-option value="M">Priority M</mat-option>
+            <mat-option value="H">Priority H</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Project</mat-label>
+          <mat-select [(ngModel)]="editProjectId">
+            <mat-option [value]="undefined">Inbox</mat-option>
+            @for (project of taskService.projects(); track project.id) {
+              <mat-option [value]="project.id">{{ project.name }}</mat-option>
+            }
+            <mat-divider></mat-divider>
+            <mat-option (click)="$event.stopPropagation(); isAddingProject.set(true)">
+              <mat-icon>add</mat-icon> New Project
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      @if (isAddingProject()) {
+        <div class="inline-add-project">
+          <mat-form-field appearance="outline" class="full-width">
+            <input matInput placeholder="Project name" [(ngModel)]="newProjectName" (keyup.enter)="createNewProject()">
+            <button mat-icon-button matSuffix (click)="createNewProject()" [disabled]="!newProjectName.trim()">
+              <mat-icon>check</mat-icon>
+            </button>
+            <button mat-icon-button matSuffix (click)="isAddingProject.set(false); newProjectName = ''">
+              <mat-icon>close</mat-icon>
+            </button>
+          </mat-form-field>
+        </div>
+      }
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Tags</mat-label>
+        <mat-select [(ngModel)]="editTags" multiple>
+          @for (tag of taskService.tags(); track tag) {
+            <mat-option [value]="tag">{{ tag }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <div class="form-actions">
+        <button mat-raised-button color="primary" (click)="saveEdit()">Save</button>
+        <button mat-button (click)="cancelEdit()">Cancel</button>
+      </div>
+    </div>
+  }
+</div>

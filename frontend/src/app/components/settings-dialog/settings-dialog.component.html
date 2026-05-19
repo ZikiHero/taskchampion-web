@@ -1,0 +1,66 @@
+<h2 mat-dialog-title>Settings</h2>
+<mat-dialog-content class="mat-typography">
+  <mat-tab-group>
+    <mat-tab label="General">
+      <div class="settings-tab-content">
+        <section class="settings-section">
+          <h3>Language & Region</h3>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Language</mat-label>
+            <mat-select value="en">
+              <mat-option value="en">English</mat-option>
+              <mat-option value="de">Deutsch</mat-option>
+              <mat-option value="es">Español</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </section>
+
+        <section class="settings-section">
+          <h3>Preferences</h3>
+          <div class="setting-row">
+            <span>Show completed tasks</span>
+            <mat-slide-toggle [checked]="false"></mat-slide-toggle>
+          </div>
+          <div class="setting-row">
+            <span>Enable desktop notifications</span>
+            <mat-slide-toggle [checked]="true"></mat-slide-toggle>
+          </div>
+        </section>
+      </div>
+    </mat-tab>
+    <mat-tab label="Account">
+      <div class="settings-tab-content">
+        <section class="settings-section">
+          <h3>User Information</h3>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Name</mat-label>
+            <input matInput value="User Champion">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Email</mat-label>
+            <input matInput value="user@taskchampion.com" readonly>
+          </mat-form-field>
+        </section>
+      </div>
+    </mat-tab>
+    <mat-tab label="Theme">
+      <div class="settings-tab-content">
+         <section class="settings-section">
+          <h3>App Theme</h3>
+           <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Mode</mat-label>
+            <mat-select [value]="themeService.theme()" (selectionChange)="onThemeChange($event.value)">
+              <mat-option value="light">Light</mat-option>
+              <mat-option value="dark">Dark</mat-option>
+              <mat-option value="system">System Default</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </section>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="close()">Close</button>
+  <button mat-raised-button color="primary" (click)="close()">Save Changes</button>
+</mat-dialog-actions>

@@ -1,0 +1,28 @@
+.settings-tab-content {
+  padding: 20px 0;
+  min-height: 300px;
+}
+.settings-section {
+  margin-bottom: 24px;
+}
+.settings-section h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #555;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 8px;
+}
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+.full-width {
+  width: 100%;
+}
+mat-tab-group {
+  min-width: 450px;
+}

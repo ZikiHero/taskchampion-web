@@ -1,0 +1,97 @@
+<div class="layout-container">
+  <mat-toolbar class="header">
+    <div class="header-left">
+      <button mat-icon-button (click)="sidenav.toggle()" matTooltip="Toggle menu">
+        <mat-icon>menu</mat-icon>
+      </button>
+    </div>
+    <div class="header-center">
+      <div class="logo-container" (click)="taskService.setView('inbox')">
+        <mat-icon class="logo-icon">check_circle</mat-icon>
+        <span class="logo-text">TaskChampion</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <button mat-icon-button matTooltip="Add task">
+        <mat-icon>add</mat-icon>
+      </button>
+      <button mat-icon-button matTooltip="Search">
+        <mat-icon>search</mat-icon>
+      </button>
+      <button mat-icon-button matTooltip="Settings" (click)="openSettings()">
+        <mat-icon>settings</mat-icon>
+      </button>
+      <div class="auth-buttons">
+        @if (!isLoggedIn()) {
+          <button mat-button class="login-btn" (click)="login()">Login</button>
+        } @else {
+          <button mat-icon-button [matTooltip]="'Logout (' + userName() + ')'" (click)="logout()">
+            <mat-icon>logout</mat-icon>
+          </button>
+        }
+      </div>
+    </div>
+  </mat-toolbar>
+
+  <mat-sidenav-container class="sidenav-container" hasBackdrop="false">
+    <mat-sidenav #sidenav mode="side" opened class="sidenav">
+      <mat-nav-list class="main-nav">
+        <a mat-list-item (click)="taskService.setView('inbox')" [class.active]="taskService.currentView() === 'inbox'">
+          <mat-icon matListItemIcon color="primary">inbox</mat-icon>
+          <span matListItemTitle>Inbox</span>
+          <span class="count" *ngIf="getInboxCount() > 0">{{ getInboxCount() }}</span>
+        </a>
+        <a mat-list-item (click)="taskService.setView('today')" [class.active]="taskService.currentView() === 'today'">
+          <mat-icon matListItemIcon style="color: #058527">today</mat-icon>
+          <span matListItemTitle>Today</span>
+          <span class="count" *ngIf="getTodayCount() > 0">{{ getTodayCount() }}</span>
+        </a>
+        <a mat-list-item (click)="taskService.setView('upcoming')" [class.active]="taskService.currentView() === 'upcoming'">
+          <mat-icon matListItemIcon style="color: #692ec2">calendar_today</mat-icon>
+          <span matListItemTitle>Upcoming</span>
+        </a>
+      </mat-nav-list>
+
+        <div class="tags-section">
+          <div class="section-header">
+            <span>Tags</span>
+            <button mat-icon-button class="small-icon-btn">
+              <mat-icon>add</mat-icon>
+            </button>
+          </div>
+          <mat-nav-list class="tags-list">
+            @for (tag of taskService.tags(); track tag) {
+              <a mat-list-item (click)="taskService.setView(tag)" [class.active]="taskService.currentView() === tag">
+                <mat-icon matListItemIcon class="tag-icon">label</mat-icon>
+                <span matListItemTitle>{{ tag }}</span>
+                <span class="count" *ngIf="getTagCount(tag) > 0">{{ getTagCount(tag) }}</span>
+              </a>
+            }
+          </mat-nav-list>
+        </div>
+
+      <div class="projects-section">
+        <div class="projects-header">
+          <span>Projects</span>
+          <button mat-icon-button class="small-icon-btn">
+            <mat-icon>add</mat-icon>
+          </button>
+        </div>
+
+        <mat-nav-list class="projects-list">
+          @for (project of taskService.projects(); track project.id) {
+            <a mat-list-item (click)="taskService.setView(project.id)" [class.active]="taskService.currentView() === project.id">
+              <mat-icon matListItemIcon [style.color]="project.color" class="project-dot">fiber_manual_record</mat-icon>
+              <span matListItemTitle>{{ project.name }}</span>
+              <span class="count" *ngIf="getProjectCount(project.id) > 0">{{ getProjectCount(project.id) }}</span>
+            </a>
+          }
+        </mat-nav-list>
+      </div>
+    </mat-sidenav>
+
+    <mat-sidenav-content class="content">
+      <app-task-list></app-task-list>
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+</div>
