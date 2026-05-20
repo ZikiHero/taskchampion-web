@@ -122,6 +122,18 @@ clean-containers: clean-images clean-volumes
 up:
     podman-compose -f docker-compose-dev.yml up -d --build
 
+# Start only the backend
+up-backend:
+    podman-compose -f docker-compose-dev.yml up -d --build tcweb-backend
+
+# Start only the middleware
+up-middleware:
+    podman-compose -f docker-compose-dev.yml up -d --build sync-middleware
+
+# Start only the frontend
+up-frontend:
+    podman-compose -f docker-compose-dev.yml up -d --build tcweb-frontend
+
 # Stop podman compose
 down:
     podman-compose down
@@ -142,6 +154,9 @@ test-all: test-backend test-frontend test-middleware
 clean-all: clean-backend clean-frontend clean-middleware clean-containers
 
 # Alias for backward compatibility or convenience
+backend: run-backend
+frontend: run-frontend
+middleware: run-middleware
 build: build-backend
 run: run-backend
 test: test-backend

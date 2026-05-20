@@ -3,6 +3,7 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
+  "runArgs": ["--publish", "4200:4200"],
   "customizations": {
     "vscode": {
       "extensions": [
