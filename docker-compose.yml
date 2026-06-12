@@ -5,7 +5,7 @@ services:
     container_name: tc_middleware
     image: ghcr.io/dhufe/tcweb-middleware:dev
     env_file:
-      - .env 
+      - stack.env 
     environment:
         RUST_LOG: debug
     volumes:
@@ -19,7 +19,7 @@ services:
     container_name: tc_backend
     image: ghcr.io/dhufe/tcweb-backend:dev
     env_file:
-      - .env 
+      - stack.env 
     volumes:
       - backenddata:/app/data:z
       - backendconfig:/app/config:z
@@ -34,7 +34,7 @@ services:
     container_name: tc_frontend
     image: ghcr.io/dhufe/tcweb-frontend:dev
     env_file:
-      - .env 
+      - stack.env 
     ports:
       - "4200:80"
     networks:
@@ -48,4 +48,5 @@ volumes:
 
 networks:
   tc_network:
-    driver: bridge
+    external: true
+    name: taskchampion_tc_network
