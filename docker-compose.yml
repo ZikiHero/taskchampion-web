@@ -3,7 +3,7 @@ version: "3.9"
 services:
   sync-middleware:
     container_name: tc_middleware
-    image: ghcr.io/dhufe/tcweb-middleware:dev
+    image: localhost/tcweb-middleware:dev
     env_file:
       - stack.env 
     environment:
@@ -17,7 +17,7 @@ services:
 
   tcweb-backend:
     container_name: tc_backend
-    image: ghcr.io/dhufe/tcweb-backend:dev
+    image: localhost/tcweb-backend:dev
     env_file:
       - stack.env 
     volumes:
@@ -32,7 +32,7 @@ services:
 
   tcweb-frontend:
     container_name: tc_frontend
-    image: ghcr.io/dhufe/tcweb-frontend:dev
+    image: localhost/tcweb-frontend:dev
     env_file:
       - stack.env 
     ports:
